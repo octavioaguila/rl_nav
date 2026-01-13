@@ -39,19 +39,13 @@ class BunkerCallback(BaseCallback):
 
         # Log environment parameters if they exist
         for param in ["max_goal_sampling_distance", "energy_weight"]:
-            try:
-                # Use get_attr to support vectorized environments
-                # We assume all environments have the same parameter value
-                value = self.training_env.get_attr(param)[0]
-                self.logger.record(f"env/{param}", value)
-                
-                # Print only if the value has changed or it's the first time
-                if self.verbose > 0 and self.last_params.get(param) != value:
-                    print(f"[BunkerCallback] {param} updated to: {value}")
-                    self.last_params[param] = value
-            except (AttributeError, Exception):
-                # Parameter not present in the environment
-                pass
+            # Use get_attr to support vectorized environments
+            # We check if the attribute exists via __dir__ to avoid crashing SubprocVecEnv workers
+            if param not in self.training_env.env_method("__dir__")[0]:
+                continue
+
+            value = self.training_env.get_attr(param)[0]
+            self.logger.record(f"env/{param}", value)
 
 class CurriculumCallback(BaseCallback):
     def __init__(self, eval_env, verbose=1):
