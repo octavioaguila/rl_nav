@@ -10,9 +10,6 @@ class BunkerCallback(BaseCallback):
     def __init__(self, verbose=0):
         super().__init__(verbose)
         self.collision_buffer = deque(maxlen=100)
-        self.success_buffer = deque(maxlen=100)
-        self.energy_buffer = deque(maxlen=100)
-        self.last_params = {}
 
     def _on_step(self) -> bool:
         # Iterate over all environments
@@ -23,10 +20,6 @@ class BunkerCallback(BaseCallback):
                 # Log Collision
                 if "collision" in info:
                     self.collision_buffer.append(float(info["collision"]))
-
-                # Log Energy
-                if "energy_joules" in info:
-                    self.energy_buffer.append(float(info["energy_joules"]))
                 
         return True
 
@@ -34,11 +27,9 @@ class BunkerCallback(BaseCallback):
         # Log to TensorBoard at the end of each rollout
         if len(self.collision_buffer) > 0:
             self.logger.record("rollout/collision_rate", np.mean(self.collision_buffer))
-        if len(self.energy_buffer) > 0:
-            self.logger.record("rollout/energy_joules", np.mean(self.energy_buffer))
 
         # Log environment parameters if they exist
-        for param in ["max_goal_sampling_distance", "energy_weight"]:
+        for param in ["max_goal_sampling_distance"]:
             # Use get_attr to support vectorized environments
             # We check if the attribute exists via __dir__ to avoid crashing SubprocVecEnv workers
             if param not in self.training_env.env_method("__dir__")[0]:
