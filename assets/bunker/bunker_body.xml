@@ -1,0 +1,63 @@
+<mujocoinclude>
+    <!-- Robot body -->
+    <body name="mobile_base" pos="-4.0 -4.0 .22" euler="0 0 1.5708">
+    <joint type="free" name="mobile_base_joint"/> 
+    <inertial mass="130.0" pos="0 0 0" diaginertia="10.443333156 10.443333156 10.72"/>
+    <geom name="mobile_base_geom" type="mesh" mesh="scaled_bunker" material="agilexgray" euler="0 0 3.14159" pos="0 0 0" size="1" />
+
+    <!-- Right wheels -->
+    <!-- Wheel Right Rear -->
+    <body name="w_rr" pos="-0.275 -0.286 -0.19" euler="1.5708 0 0">
+        <joint name="w_rr_joint" pos="0 0 0" axis="0 0 -1" frictionloss="0.1" damping="1.0"/>
+        <inertial mass="2" pos="0 0 0" diaginertia="0.443333156 0.443333156 0.72"/>
+        <geom name="w_rr_geom" size="0.07 0.07 0.05" type="mesh" mesh="wheel" material="agilexblue" pos="0 0 0" friction="1"/>
+    </body>
+
+    <!-- Wheel Right Center -->
+    <body name="w_rc" pos="0.0 -0.286 -0.19" euler="1.5708 0 0">
+        <joint name="w_rc_joint" pos="0 0 0" axis="0 0 -1" frictionloss="0.1" damping="1.0"/>
+        <inertial mass="2" pos="0 0 0" diaginertia="0.443333156 0.443333156 0.72"/>
+        <geom name="w_rc_geom" size="0.07 0.07 0.05" type="mesh" mesh="wheel" material="agilexblue" pos="0 0 0" friction="1"/>
+    </body>
+
+    <!-- Wheel Right Front -->
+    <body name="w_rf" pos="0.25 -0.286 -0.19" euler="1.5708 0 0">
+        <joint name="w_rf_joint" pos="0 0 0" axis="0 0 -1" frictionloss="0.1" damping="1.0"/>
+        <inertial mass="2" pos="0 0 0" diaginertia="0.443333156 0.443333156 0.72"/>
+        <geom name="w_rf_geom" size="0.07 0.07 0.05" type="mesh" mesh="wheel" material="agilexred" pos="0 0 0" friction="1"/>
+    </body>
+
+    <!-- Left wheels -->
+    <!-- Wheel Left Rear -->
+    <body name="w_lr" pos="-0.275 0.269 -0.19" euler="1.5708 0 0">
+        <joint name="w_lr_joint" pos="0 0 0" axis="0 0 -1" frictionloss="0.1" damping="1.0"/>
+        <inertial mass="2" pos="0 0 0" diaginertia="0.443333156 0.443333156 0.72"/>
+        <geom name="w_lr_geom" size="0.07 0.07 0.05" type="mesh" mesh="wheel" material="agilexblue" pos="0 0 0" friction="1"/>
+    </body>
+
+    <!-- Wheel Left Center -->
+    <body name="w_lc" pos="0.0 0.269 -0.19" euler="1.5708 0 0">
+        <joint name="w_lc_joint" pos="0 0 0" axis="0 0 -1" frictionloss="0.1" damping="1.0"/>
+        <inertial mass="2" pos="0 0 0" diaginertia="0.443333156 0.443333156 0.72"/>
+        <geom name="w_lc_geom" size="0.07 0.07 0.05" type="mesh" mesh="wheel" material="agilexblue" pos="0 0 0" friction="1"/>
+    </body>
+
+    <!-- Wheel Left Front -->
+    <body name="w_lf" pos="0.25 0.269 -0.19" euler="1.5708 0 0">
+        <joint name="w_lf_joint" pos="0 0 0" axis="0 0 -1" frictionloss="0.1" damping="1.0"/>
+        <inertial mass="2" pos="0 0 0" diaginertia="0.443333156 0.443333156 0.72"/>
+        <geom name="w_lf_geom" size="0.07 0.07 0.05" type="mesh" mesh="wheel" material="agilexblue" pos="0 0 0" friction="1"/>
+    </body>
+
+    <!-- Bunker sensors -->
+    <!-- Lidar, source: https://github.com/google-deepmind/mujoco/discussions/688#discussioncomment-10063781-->
+    <!-- 2pi / 449 points for replicate tag (inspired in VLP16 lidar) -->
+    <body name="lidar" pos="0 0 0.17" euler="0 0 3.14159265359">
+        <geom type="cylinder" size="0.05 0.02" pos="0 0 0"/>
+        <replicate count="449" euler="0 0 0.013993731">   
+        <site name="rf" pos="0 0 0" zaxis="1 0 0"/>
+        </replicate>
+    </body>
+
+    </body>
+</mujocoinclude>

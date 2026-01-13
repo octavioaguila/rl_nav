@@ -1,0 +1,25 @@
+<mujocoinclude>
+    <!-- Actuators -->
+    <actuator>
+        <!-- Wheel angular-speed controllers -->
+        <velocity name="w_rr" joint="w_rr_joint" kv="40" ctrllimited="true" ctrlrange="-50 50" forcerange="-200 200"/>
+        <velocity name="w_rc" joint="w_rc_joint" kv="40" ctrllimited="true" ctrlrange="-50 50" forcerange="-200 200"/>
+        <velocity name="w_rf" joint="w_rf_joint" kv="40" ctrllimited="true" ctrlrange="-50 50" forcerange="-200 200"/>
+        <velocity name="w_lr" joint="w_lr_joint" kv="40" ctrllimited="true" ctrlrange="-50 50" forcerange="-200 200"/>
+        <velocity name="w_lc" joint="w_lc_joint" kv="40" ctrllimited="true" ctrlrange="-50 50" forcerange="-200 200"/>
+        <velocity name="w_lf" joint="w_lf_joint" kv="40" ctrllimited="true" ctrlrange="-50 50" forcerange="-200 200"/>
+    </actuator>
+
+    <sensor>
+        <rangefinder site="rf" cutoff="20.0"/> <!-- Cutoff is the maximum distance of the rangefinder. If you change the value, remember to change it in gym_bunker_env.py and point_net_extractor.py -->
+    
+        <!-- Torque produced by each actuator -->
+        <actuatorfrc name="sf_rr" actuator="w_rr"/>
+        <actuatorfrc name="sf_rc" actuator="w_rc"/>
+        <actuatorfrc name="sf_rf" actuator="w_rf"/>
+        <actuatorfrc name="sf_lr" actuator="w_lr"/>
+        <actuatorfrc name="sf_lc" actuator="w_lc"/>
+        <actuatorfrc name="sf_lf" actuator="w_lf"/>
+
+    </sensor>
+</mujocoinclude>
