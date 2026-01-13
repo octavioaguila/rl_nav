@@ -36,12 +36,12 @@ class BunkerEnv(MujocoEnv):
     | n_lidar*3+3 to n_lidar*3+4  | Normalized velocity (v, w)                                                                     | -1    | 1     |
 
     ## Reward Function
-    The reward function is a weighted sum of the following components:
-    | Component         | Weight |
-    |-------------------|--------|
-    | Distance to goal  |  2.0   |
-    | Collision         | -10.0  |
-    | Success           |  10.0  |
+    The reward function is dense, defined as:
+    | Component         |       Value      |
+    |-------------------|-------------------|
+    | Collision         |       -10.0       |
+    | Success           |        10.0       |
+    | Any other         | d_{t-1}^g - d_t^g |
     """
 
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
