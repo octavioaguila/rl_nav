@@ -5,7 +5,6 @@ import gymnasium as gym
 from stable_baselines3 import SAC, HerReplayBuffer
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 from stable_baselines3.common.callbacks import CallbackList, EvalCallback
-from bunker_callback import BunkerCallback, CurriculumCallback
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
 from lib.bunker_callback import BunkerCallback
