@@ -29,7 +29,7 @@ class BunkerEnv(MujocoEnv):
 
     ## Observation Space
     The observation space is a Dict with:
-    - `observation`: `Box(-1, 1, (n_lidar*3 + 2), float32)` -> LiDAR + (v, w)
+    - `observation`: `Box(-1, 1, (k_history_window * (n_lidar*3 + 2)), float32)` -> k_history_window * (LiDAR + vel (v, w))
     - `achieved_goal`: `Box(-inf, inf, (3,), float32)` -> [x, y, yaw]
     - `desired_goal`: `Box(-inf, inf, (3,), float32)` -> [x, y, yaw]
 
@@ -39,8 +39,8 @@ class BunkerEnv(MujocoEnv):
 
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
 
-    def __init__(self, xml_path: str, frame_skip: int = 10, render_mode: str | None = None, n_lidar: int = 449, inference_mode: bool = False,
-                max_goal_sampling_distance: float = 8.0):
+    def __init__(self, xml_path: str, frame_skip: int = 10, render_mode: str | None = None, n_lidar: int = 449, inference_mode: bool = False, 
+                max_goal_sampling_distance: float = 8.0, k_history_window: int = 5):
 
         print("[Gym Bunker Env] Max goal sampling distance:", max_goal_sampling_distance)
         
@@ -48,6 +48,11 @@ class BunkerEnv(MujocoEnv):
         self.n_lidar   = n_lidar
         self.lidar_angles = np.linspace(-np.pi, np.pi, self.n_lidar, endpoint=False).astype(np.float32)
         self.lidar_max_range = 20.0 # This has to be the same as the cutoff in the XML file and point_net_extractor.py.
+
+        # History parameters
+        self.k_history = k_history_window
+        # Deque automatically handles the sliding window (dropping old values)
+        self.history = deque(maxlen=self.k_history) 
 
         # World bounds for random reset and goal sampling
         self.xy_min = np.array([-4., -4.], np.float32)
@@ -69,8 +74,9 @@ class BunkerEnv(MujocoEnv):
         self.v_max, self.w_max = 0.5, 0.5
         self.vel_scale = np.array([self.v_max, self.w_max], np.float32)
 
-        # Observation space: LiDAR + (v, w)
-        obs_dim = self.n_lidar * 3 + 2
+        # Observation space: LiDAR + Velocities k_history*(n_lidar*3 + 2) + Goal Dict
+        self.features_per_step = 2 # [v, w]
+        obs_dim = self.k_history * (self.n_lidar*3 + self.features_per_step)
         
         self.observation_space = spaces.Dict({
             "observation": spaces.Box(low=-1.0, high=1.0, shape=(obs_dim,), dtype=np.float32),
@@ -111,10 +117,9 @@ class BunkerEnv(MujocoEnv):
         
         return linear_vel_body, angular_vel_body
 
-    def reset_model(self) -> NDArray[np.float64]:
+    def reset_model(self) -> NDArray[np.float32]:
 
         self.velocity_controller.reset()
-
         rng = self.np_random
 
         # Sample collision-free initial robot pose
@@ -167,68 +172,11 @@ class BunkerEnv(MujocoEnv):
 
         self._set_goal_marker_position(self._goal, is_final_goal=True)
 
-        return self._get_obs()
-
-    def set_manual_pose(self, initial_pose: NDArray[np.float32] | list[float], goal_pose: NDArray[np.float32] | list[float]) -> dict[str, np.ndarray]:
-        """
-        Manually set the initial robot pose and the goal pose.
-        Follows the same logic as reset_model, including collision checks, bounds checks,
-        distance checks, and controller reset.
-        """
-        self.velocity_controller.reset()
-
-        initial_pose = np.array(initial_pose, dtype=np.float32)
-        goal_pose = np.array(goal_pose, dtype=np.float32)
-
-        # Bounds check
-        if not (self.xy_min[0] <= initial_pose[0] <= self.xy_max[0] and 
-                self.xy_min[1] <= initial_pose[1] <= self.xy_max[1]):
-            raise ValueError(f"Initial pose {initial_pose[:2]} is out of world bounds {self.xy_min} to {self.xy_max}")
-        
-        if not (self.xy_min[0] <= goal_pose[0] <= self.xy_max[0] and 
-                self.xy_min[1] <= goal_pose[1] <= self.xy_max[1]):
-            raise ValueError(f"Goal pose {goal_pose[:2]} is out of world bounds {self.xy_min} to {self.xy_max}")
-
-        # Initial robot pose collision check
-        self.data.qpos[:] = 0.
-        self.data.qpos[:2] = initial_pose[:2]
-        self.data.qpos[2] = 0.25  # height above ground, defined in XML/reset_model
-        c, s = np.cos(initial_pose[2] / 2), np.sin(initial_pose[2] / 2)
-        self.data.qpos[3:7] = (c, 0., 0., s)
-
-        mujoco.mj_forward(self.model, self.data)
-        if self._is_collision():
-            raise ValueError(f"Initial pose {initial_pose} results in a collision.")
-
-        # Goal distance check
-        distance = np.linalg.norm(goal_pose[:2] - initial_pose[:2])
-        if not (self.min_goal_sampling_distance < distance <= self.max_goal_sampling_distance):
-            raise ValueError(f"Distance between start and goal ({distance:.2f}m) is outside the valid range "
-                             f"[{self.min_goal_sampling_distance}, {self.max_goal_sampling_distance}]")
-
-        # Goal pose collision check
-        self._goal = goal_pose.copy()
-        
-        # Temporarily set robot to goal position to check for collision
-        self.data.qpos[:2] = self._goal[:2]
-        c, s = np.cos(self._goal[2] / 2), np.sin(self._goal[2] / 2)
-        self.data.qpos[3:7] = (c, 0., 0., s)
-        mujoco.mj_forward(self.model, self.data)
-        has_collision = self._is_collision()
-
-        # Return robot to original (initial) position
-        self.data.qpos[:2] = initial_pose[:2]
-        c, s = np.cos(initial_pose[2] / 2), np.sin(initial_pose[2] / 2)
-        self.data.qpos[3:7] = (c, 0., 0., s)
-        mujoco.mj_forward(self.model, self.data)
-
-        if has_collision:
-            raise ValueError(f"Goal pose {goal_pose} results in a collision.")
-
-        # Finalize state (reset velocities, markers, etc.)
-        self.data.qvel[:] = 0.
-        self._is_final_goal = True
-        self._set_goal_marker_position(self._goal, is_final_goal=True)
+        # Clear history and pre-fill with the initial state to avoid cold-start issues
+        self.history.clear()
+        initial_z_t = self._get_single_step_features()
+        for _ in range(self.k_history):
+            self.history.append(initial_z_t)
 
         return self._get_obs()
 
@@ -244,19 +192,12 @@ class BunkerEnv(MujocoEnv):
         self._goal = np.array(goal, dtype=np.float32)
         self._set_goal_marker_position(self._goal, is_final_goal=False)
         self._is_final_goal = False  # This is an intermediate goal, not the final goal
-
-    def set_curriculum(self, max_goal_sampling_distance: float) -> None:
-        self.max_goal_sampling_distance = max_goal_sampling_distance
         
     def step(self, action: NDArray[np.float32]) -> tuple[NDArray[np.float32], float, bool, bool, dict]:
         # Denormalize action from [-1, 1] to actual velocity limits
         v_cmd = action[0] * self.v_max
         w_cmd = action[1] * self.w_max
-
-        # print(f"\n[GYM ENV] v_cmd: {v_cmd}, w_cmd: {w_cmd}")
         self.velocity_controller.set_cmd(float(v_cmd), float(w_cmd))
-
-        # print(f" Position: {self.data.qpos[:2]}")
 
         # integrate physics
         self.do_simulation(ctrl=np.zeros(self.model.nu), n_frames=self.frame_skip)
@@ -316,16 +257,34 @@ class BunkerEnv(MujocoEnv):
         self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(2,), dtype=np.float32)
         return self.action_space
 
+    def _get_single_step_features(self) -> np.ndarray:
+        """
+        Gathers the features for a single time step z_t (Goal Independent).
+        z_t = [n_lidar * 3, v, w]
+        All values are normalized to roughly [-1, 1].
+        """
+
+        # LiDAR
+        pts = self._lidar_points().astype(np.float32)
+        pts_flat = pts.flatten() # (n_lidar*3,)
+
+        v_raw, w_raw = self.get_robot_velocities()
+        v_raw, w_raw = v_raw[0], w_raw[2]
+        vel = np.clip(np.array([v_raw, w_raw], np.float32) / self.vel_scale, -1.0, 1.0) # (v, w)
+
+        return np.concatenate([pts_flat, vel]) # (n_lidar*3 + 2,)
+
     def _get_obs(self) -> dict[str, np.ndarray]:
         """
         Constructs the full observation dictionary.
         """
-        pts = self._lidar_points().astype(np.float32)  # shape (n_lidar_points, 3)
-        pts_flat = pts.flatten()  # shape (n_lidar_points*3,)
-        v_raw, w_raw = self.get_robot_velocities()
-        v_raw, w_raw = v_raw[0], w_raw[2]
-        vel = np.clip(np.array([v_raw, w_raw], np.float32) / self.vel_scale, -1.0, 1.0)  # shape (2,)
-        obs = np.concatenate([pts_flat, vel]).astype(np.float32)  # shape (n_lidar_points*3+2,)
+        # Get current features and update history
+        z_t = self._get_single_step_features()
+        self.history.append(z_t)
+
+        # Flatten history for the network
+        # history is a deque of K arrays of shape (n_lidar*3 + 2,). Stack -> (K, n_lidar*3 + 2) -> Flatten -> (K*(n_lidar*3 + 2),)
+        history_flat = np.array(self.history).flatten().astype(np.float32) # (K*(n_lidar*3 + 2),)
 
         # Robot Pose (Achieved Goal)
         world_robot_xy_pos = self.data.qpos[:2].copy()
@@ -334,7 +293,7 @@ class BunkerEnv(MujocoEnv):
         achieved_goal = np.array([world_robot_xy_pos[0], world_robot_xy_pos[1], world_robot_yaw], dtype=np.float32)
 
         return {
-            "observation": obs,
+            "observation": history_flat,
             "achieved_goal": achieved_goal,
             "desired_goal": self._goal.astype(np.float32)
         }
@@ -452,6 +411,6 @@ class BunkerEnv(MujocoEnv):
 
 if __name__ == "__main__":
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    xml  = os.path.join(root, "assets", "worlds", "empty.xml")
+    xml  = os.path.join(root, "assets", "worlds", "hallways.xml")
     env  = BunkerEnv(xml, render_mode="human")
     check_env(env, warn=True, skip_render_check=False)
