@@ -10,6 +10,7 @@ class BunkerCallback(BaseCallback):
     def __init__(self, verbose=0):
         super().__init__(verbose)
         self.collision_buffer = deque(maxlen=100)
+        self.max_goal_sampling_buffer = deque(maxlen=100)
 
     def _on_step(self) -> bool:
         # Iterate over all environments
@@ -20,7 +21,10 @@ class BunkerCallback(BaseCallback):
                 # Log Collision
                 if "collision" in info:
                     self.collision_buffer.append(float(info["collision"]))
-                
+
+                if "max_goal_sampling_distance" in info:
+                    self.max_goal_sampling_buffer.append(float(info["max_goal_sampling_distance"]))
+   
         return True
 
     def _on_rollout_end(self) -> None:
@@ -28,11 +32,9 @@ class BunkerCallback(BaseCallback):
         if len(self.collision_buffer) > 0:
             self.logger.record("rollout/collision_rate", np.mean(self.collision_buffer))
 
-        # Log environment parameters if they exist
-        for param in ["max_goal_sampling_distance"]:
-            # Use get_attr to support vectorized environments
-            value = self.training_env.get_attr(param)[0]
-            self.logger.record(f"env/{param}", value)
+        if len(self.max_goal_sampling_buffer) > 0:
+            self.logger.record("vars/collision_rate", np.mean(self.collision_buffer))
+
 
 class CurriculumCallback(BaseCallback):
     def __init__(self, eval_env, verbose=1):

@@ -210,6 +210,7 @@ class BunkerEnv(MujocoEnv):
             "is_success": success,
             "collision": collision,
             "goal": self._goal,
+            "max_goal_sampling_distance": self.max_goal_sampling_distance
         }
 
         if self.render_mode == "human":

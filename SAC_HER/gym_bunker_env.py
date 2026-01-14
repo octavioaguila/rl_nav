@@ -274,6 +274,7 @@ class BunkerEnv(MujocoEnv):
         info = {
             "is_success": is_success,
             "collision": collision,
+            "max_goal_sampling_distance": self.max_goal_sampling_distance
         }
         
         if self.inference_mode:
