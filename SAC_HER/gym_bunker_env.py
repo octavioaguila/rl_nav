@@ -118,7 +118,12 @@ class BunkerEnv(MujocoEnv):
         rng = self.np_random
 
         # Sample collision-free initial robot pose
+        num_attempts = 0
         while True:
+            num_attempts += 1
+            if num_attempts > 10_000:
+                raise RuntimeError(f"Could not sample collision-free initial robot pose after {num_attempts} attempts. Check your map size and obstacle density.")
+
             initial_qpos_x, initial_qpos_y = rng.uniform(self.xy_min, self.xy_max)
             initial_theta = rng.uniform(self.yaw_min, self.yaw_max)
 
@@ -135,7 +140,12 @@ class BunkerEnv(MujocoEnv):
                 break
 
         # sample goal between self.min_distance and self.max_distance_diagonal and collision-free
+        num_attempts = 0
         while True:
+            num_attempts += 1
+            if num_attempts > 10_000:
+                raise RuntimeError(f"Could not sample collision-free goal pose after {num_attempts} attempts. Check your map size and obstacle density.")
+                
             goal_qpos_x, goal_qpos_y = rng.uniform(self.xy_min, self.xy_max)
             goal_theta = rng.uniform(self.yaw_min, self.yaw_max)
 
