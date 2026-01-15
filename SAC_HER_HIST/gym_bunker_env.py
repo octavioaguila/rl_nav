@@ -29,7 +29,7 @@ class BunkerEnv(MujocoEnv):
 
     ## Observation Space
     The observation space is a Dict with:
-    - `observation`: `Box(-1, 1, (k_history_window * (n_lidar*3 + 2)), float32)` -> k_history_window * (LiDAR + vel (v, w))
+    - `observation`: `Box(-1, 1, (n_lidar*3 + k_history_window * 2), float32)` -> LiDAR + k_history_window * vel (v, w)
     - `achieved_goal`: `Box(-inf, inf, (3,), float32)` -> [x, y, yaw]
     - `desired_goal`: `Box(-inf, inf, (3,), float32)` -> [x, y, yaw]
 
@@ -76,7 +76,7 @@ class BunkerEnv(MujocoEnv):
 
         # Observation space: LiDAR + Velocities k_history*(n_lidar*3 + 2) + Goal Dict
         self.features_per_step = 2 # [v, w]
-        obs_dim = self.k_history * (self.n_lidar*3 + self.features_per_step)
+        obs_dim = self.n_lidar*3 + self.k_history * self.features_per_step
         
         self.observation_space = spaces.Dict({
             "observation": spaces.Box(low=-1.0, high=1.0, shape=(obs_dim,), dtype=np.float32),
@@ -263,28 +263,30 @@ class BunkerEnv(MujocoEnv):
         z_t = [n_lidar * 3, v, w]
         All values are normalized to roughly [-1, 1].
         """
-
-        # LiDAR
-        pts = self._lidar_points().astype(np.float32)
-        pts_flat = pts.flatten() # (n_lidar*3,)
-
         v_raw, w_raw = self.get_robot_velocities()
         v_raw, w_raw = v_raw[0], w_raw[2]
         vel = np.clip(np.array([v_raw, w_raw], np.float32) / self.vel_scale, -1.0, 1.0) # (v, w)
 
-        return np.concatenate([pts_flat, vel]) # (n_lidar*3 + 2,)
+        return vel # (2,)
 
     def _get_obs(self) -> dict[str, np.ndarray]:
         """
         Constructs the full observation dictionary.
         """
+        # LiDAR
+        pts = self._lidar_points().astype(np.float32)
+        pts_flat = pts.flatten() # (n_lidar*3,)
+
         # Get current features and update history
         z_t = self._get_single_step_features()
         self.history.append(z_t)
 
         # Flatten history for the network
-        # history is a deque of K arrays of shape (n_lidar*3 + 2,). Stack -> (K, n_lidar*3 + 2) -> Flatten -> (K*(n_lidar*3 + 2),)
-        history_flat = np.array(self.history).flatten().astype(np.float32) # (K*(n_lidar*3 + 2),)
+        # history is a deque of K arrays of shape (2,). Stack -> (K, 2) -> Flatten -> (K*2,)
+        history_flat = np.array(self.history).flatten().astype(np.float32) # (K*2,)
+
+        # Concatenate LiDAR and history
+        obs = np.concatenate([pts_flat, history_flat]) # (n_lidar*3 + K*2,)
 
         # Robot Pose (Achieved Goal)
         world_robot_xy_pos = self.data.qpos[:2].copy()
@@ -293,7 +295,7 @@ class BunkerEnv(MujocoEnv):
         achieved_goal = np.array([world_robot_xy_pos[0], world_robot_xy_pos[1], world_robot_yaw], dtype=np.float32)
 
         return {
-            "observation": history_flat,
+            "observation": obs,
             "achieved_goal": achieved_goal,
             "desired_goal": self._goal.astype(np.float32)
         }

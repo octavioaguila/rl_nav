@@ -107,8 +107,11 @@ if __name__ == "__main__":
     xml_pool = [
         os.path.join(worlds_path, "empty.xml"),
         os.path.join(worlds_path, "cylinders_easy.xml"),
-        os.path.join(worlds_path, "cylinders.xml")
+        os.path.join(worlds_path, "cylinders.xml"),
+        os.path.join(worlds_path, "track_one.xml"),
+        os.path.join(worlds_path, "hallways.xml"),
     ]
+
 
     # Parameters
     total_steps = 2_000_000
