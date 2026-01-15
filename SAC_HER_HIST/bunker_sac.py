@@ -117,7 +117,7 @@ if __name__ == "__main__":
     total_steps = 2_000_000
     n_envs = 8
     
-    base_log_dir = os.path.join(root, "training", "log")
+    base_log_dir = os.path.join(root, "log")
 
     run_name = get_next_run_name(base_log_dir)
 
