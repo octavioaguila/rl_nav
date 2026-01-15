@@ -32,7 +32,7 @@ def train(xml_paths, total_steps, n_envs, max_ep_steps, log_dir):
     # Evaluation env
     eval_env = SubprocVecEnv([make_single_env(xml_paths, max_ep_steps, i) for i in range(len(xml_paths))])
     eval_env = VecMonitor(eval_env)
-    n_eval_episodes = len(xml_paths) * 10
+    n_eval_episodes = len(xml_paths) * 2
 
     # callbacks ────────────────────────────────────────────────────────────────
     eval_callback = EvalCallback(eval_env, best_model_save_path=os.path.join(log_dir, "best_model"), log_path=log_dir, eval_freq=5_000,
