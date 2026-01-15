@@ -33,7 +33,7 @@ class BunkerCallback(BaseCallback):
             self.logger.record("rollout/collision_rate", np.mean(self.collision_buffer))
 
         if len(self.max_goal_sampling_buffer) > 0:
-            self.logger.record("vars/max_goal_sampling_buffer", np.mean(self.max_goal_sampling_buffer))
+            self.logger.record("vars/max_goal_sampling", np.mean(self.max_goal_sampling_buffer))
 
 
 class CurriculumCallback(BaseCallback):
