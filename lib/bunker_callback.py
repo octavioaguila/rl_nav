@@ -11,6 +11,7 @@ class BunkerCallback(BaseCallback):
         super().__init__(verbose)
         self.collision_buffer = deque(maxlen=100)
         self.max_goal_sampling_buffer = deque(maxlen=100)
+        self.k_history_window_buffer = deque(maxlen=100)
 
     def _on_step(self) -> bool:
         # Iterate over all environments
@@ -24,6 +25,9 @@ class BunkerCallback(BaseCallback):
 
                 if "max_goal_sampling_distance" in info:
                     self.max_goal_sampling_buffer.append(float(info["max_goal_sampling_distance"]))
+
+                if "k_history_window" in info:
+                    self.k_history_window_buffer.append(float(info["k_history_window"]))
    
         return True
 
@@ -34,6 +38,9 @@ class BunkerCallback(BaseCallback):
 
         if len(self.max_goal_sampling_buffer) > 0:
             self.logger.record("vars/max_goal_sampling", np.mean(self.max_goal_sampling_buffer))
+
+        if len(self.k_history_window_buffer) > 0:
+            self.logger.record("vars/k_history_window", np.mean(self.k_history_window_buffer))
 
 
 class CurriculumCallback(BaseCallback):
