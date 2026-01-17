@@ -1,0 +1,10 @@
+
+============================================================
+INFERENCE RESULTS: run_1 on cylinders
+Training parameters: Max goal sampling distance: 8.0
+============================================================
+Success Rate:      98.5% (197/200)
+Collision Rate:    0.5% (1/200)
+Timeout Rate:      1.0% (2/200)
+Mean Episode Len:  117.3 steps
+============================================================

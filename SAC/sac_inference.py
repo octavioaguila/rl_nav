@@ -18,11 +18,11 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Variables
 run_name = "run_1"
 max_goal_sampling_distance = 8.0
-env_name = "cylinders"
+env_name = "val/world_99_easy"
 
 # Paths
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")
-ckpt = os.path.join(root, "SAC_HER_HIST", "log", run_name, "best_model", "best_model.zip")
+ckpt = os.path.join(root, "SAC", "log", run_name, "best_model", "best_model.zip")
 
 # Environment Setup
 env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode="human", max_goal_sampling_distance=max_goal_sampling_distance), 
@@ -92,7 +92,7 @@ stats_str = "\n".join(stats_output)
 print(stats_str)
 
 # Save Results
-results_dir = os.path.join(root, "inference", "results")
+results_dir = os.path.join(root, "SAC", "inference", "results")
 os.makedirs(results_dir, exist_ok=True)
 results_file = os.path.join(results_dir, f"{run_name}_{env_name}_metrics_analysis.txt")
 with open(results_file, "w") as f:

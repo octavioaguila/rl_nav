@@ -21,18 +21,18 @@ def make_single_env(xml_paths: list[str], max_ep_steps: int, env_i: int):
     return _init
 
 
-def train(xml_paths, total_steps, n_envs, max_ep_steps, log_dir):
+def train(train_xml_paths, val_xml_paths, total_steps, n_envs, max_ep_steps, log_dir):
 
     os.makedirs(log_dir, exist_ok=True)
 
     # Vectorised env wrapped with VecMonitor so every worker writes a Monitor file
-    env = SubprocVecEnv([make_single_env(xml_paths, max_ep_steps, env_i) for env_i in range(n_envs)])
+    env = SubprocVecEnv([make_single_env(train_xml_paths, max_ep_steps, env_i) for env_i in range(n_envs)])
     env = VecMonitor(env, filename=os.path.join(log_dir, "monitor"))
 
     # Evaluation env
-    eval_env = SubprocVecEnv([make_single_env(xml_paths, max_ep_steps, i) for i in range(len(xml_paths))])
+    eval_env = SubprocVecEnv([make_single_env(val_xml_paths, max_ep_steps, i) for i in range(len(val_xml_paths))])
     eval_env = VecMonitor(eval_env)
-    n_eval_episodes = len(xml_paths) * 10
+    n_eval_episodes = len(val_xml_paths) * 10
 
     # callbacks ────────────────────────────────────────────────────────────────
     eval_callback = EvalCallback(eval_env, best_model_save_path=os.path.join(log_dir, "best_model"), log_path=log_dir, eval_freq=5_000,
@@ -69,6 +69,8 @@ def train(xml_paths, total_steps, n_envs, max_ep_steps, log_dir):
 
     print(f"Starting training on {n_envs} environments...")
     print(f"Logging to {log_dir}")
+    print(f"Train XML pool: {len(train_xml_paths)} worlds")
+    print(f"Val XML pool: {len(val_xml_paths)} worlds")
 
     model.learn(total_timesteps=total_steps, callback=callbacks, tb_log_name="run", progress_bar=True)
 
@@ -96,11 +98,14 @@ def get_next_run_name(log_root):
 if __name__ == "__main__":
 
     root = os.path.dirname(os.path.abspath(__file__))
-    worlds_path  = os.path.join(root, "..", "assets", "worlds")
-    xml_pool = [
-        os.path.join(worlds_path, "cylinders_easy.xml"),
-        os.path.join(worlds_path, "cylinders.xml")
-    ]
+    worlds_path_train  = os.path.join(root, "..", "assets", "worlds", "train")
+    worlds_path_val  = os.path.join(root, "..", "assets", "worlds", "val")
+    
+    train_xml_pool = [os.path.join(worlds_path_train, f) for f in os.listdir(worlds_path_train) if f.endswith(".xml")]
+    train_xml_pool.sort()
+
+    val_xml_pool = [os.path.join(worlds_path_val, f) for f in os.listdir(worlds_path_val) if f.endswith(".xml")]
+    val_xml_pool.sort()
 
     # Parameters
     total_steps = 1_250_000
@@ -113,4 +118,4 @@ if __name__ == "__main__":
 
     max_ep_steps = 600 # This is 5000 Mujoco steps, because I have a n_frames = 10
 
-    train(xml_paths=xml_pool, total_steps=total_steps, n_envs=n_envs, max_ep_steps=max_ep_steps, log_dir=log_dir)
+    train(train_xml_paths=train_xml_pool, val_xml_paths=val_xml_pool, total_steps=total_steps, n_envs=n_envs, max_ep_steps=max_ep_steps, log_dir=log_dir)
