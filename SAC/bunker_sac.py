@@ -59,8 +59,8 @@ def train(xml_paths, total_steps, n_envs, max_ep_steps, log_dir):
         gamma=0.99,
         tau=0.01,
         buffer_size=150_000,
-        train_freq=(1, "step"),
-        gradient_steps=-1,
+        train_freq=1,
+        gradient_steps=1,
         target_update_interval=2,
         tensorboard_log=os.path.join(log_dir, "tb"),
         verbose=1,
@@ -98,16 +98,13 @@ if __name__ == "__main__":
     root = os.path.dirname(os.path.abspath(__file__))
     worlds_path  = os.path.join(root, "..", "assets", "worlds")
     xml_pool = [
-        os.path.join(worlds_path, "empty.xml"),
         os.path.join(worlds_path, "cylinders_easy.xml"),
-        os.path.join(worlds_path, "cylinders.xml"),
-        os.path.join(worlds_path, "track_one.xml"),
-        os.path.join(worlds_path, "hallways.xml"),
+        os.path.join(worlds_path, "cylinders.xml")
     ]
 
     # Parameters
     total_steps = 1_250_000
-    n_envs = 8
+    n_envs = 12
     base_log_dir = os.path.join(root, "log")
 
     run_name = get_next_run_name(base_log_dir)
