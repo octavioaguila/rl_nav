@@ -40,7 +40,7 @@ class BunkerEnv(MujocoEnv):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
 
     def __init__(self, xml_path: str, frame_skip: int = 10, render_mode: str | None = None, n_lidar: int = 449, inference_mode: bool = False,
-                max_goal_sampling_distance: float = 20.0):
+                max_goal_sampling_distance: float = 8.0):
 
         print("[Gym Bunker Env] Max goal sampling distance:", max_goal_sampling_distance)
         
