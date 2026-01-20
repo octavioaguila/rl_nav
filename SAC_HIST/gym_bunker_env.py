@@ -51,6 +51,7 @@ class BunkerEnv(MujocoEnv):
                  max_goal_sampling_distance: float = 8.0, k_history_window: int = 10):
 
         print("[Gym Bunker Env] Max goal sampling distance:", max_goal_sampling_distance)
+        print("[Gym Bunker Env] K history window:", k_history_window)
 
         # LiDAR parameters
         self.n_lidar   = n_lidar
@@ -231,7 +232,8 @@ class BunkerEnv(MujocoEnv):
             "is_success": success,
             "collision": collision,
             "goal": self._goal,
-            "max_goal_sampling_distance": self.max_goal_sampling_distance
+            "max_goal_sampling_distance": self.max_goal_sampling_distance,
+            "k_history_window": self.k_history
         }
 
         if self.render_mode == "human":
