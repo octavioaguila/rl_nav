@@ -7,15 +7,15 @@ from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 from stable_baselines3.common.callbacks import CallbackList, EvalCallback
 
 sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
-from lib.bunker_callback import BunkerCallback
-from gym_bunker_env import BunkerEnv
-from feature_extractor import FeatureExtractor
+from lib.bunker_callback import BunkerCallback, CurriculumCallback
+from SAC_HER.gym_bunker_env import BunkerEnv
+from SAC_HER.feature_extractor import FeatureExtractor
 
 def make_single_env(xml_paths: list[str], max_ep_steps: int, env_i: int):
     def _init():
         xml_path = xml_paths[env_i % len(xml_paths)] # If I have 5 envs and 2 xmls, env 0 will use xml 0, env 1 will use xml 1, env 2 will use xml 0, etc.
         # env = BunkerEnv(xml_path=xml_path, render_mode="human")
-        env = BunkerEnv(xml_path=xml_path, render_mode=None, n_lidar=449)
+        env = BunkerEnv(xml_path=xml_path, render_mode=None, n_lidar=449, max_goal_sampling_distance=4.0)
         env = gym.wrappers.TimeLimit(env, max_episode_steps=max_ep_steps)
         return env
     return _init
@@ -35,8 +35,11 @@ def train(train_xml_paths, val_xml_paths, total_steps, n_envs, max_ep_steps, log
     n_eval_episodes = len(val_xml_paths) * 10
 
     # callbacks ────────────────────────────────────────────────────────────────
+    curriculum_callback = CurriculumCallback(eval_env, verbose=1)
+
+    # callbacks ────────────────────────────────────────────────────────────────
     eval_callback = EvalCallback(eval_env, best_model_save_path=os.path.join(log_dir, "best_model"), log_path=log_dir, eval_freq=5_000,
-                     n_eval_episodes=n_eval_episodes, deterministic=True, render=False, verbose=1)
+                     n_eval_episodes=n_eval_episodes, deterministic=True, render=False, verbose=1, callback_after_eval=curriculum_callback)
     
     callbacks = CallbackList([
         eval_callback,

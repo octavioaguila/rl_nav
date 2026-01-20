@@ -51,9 +51,11 @@ class CurriculumCallback(BaseCallback):
         
         # Define your curriculum levels
         self.levels = [
-            {"max_goal_sampling_distance": 4.0, "threshold": 0.8}, # In the first level the only parameter that matters is threshold, the rest is just for compatibility
-            {"max_goal_sampling_distance": 8.0, "threshold": 0.8},
-            {"max_goal_sampling_distance": 12.0, "threshold": 0.8},
+            {"max_goal_sampling_distance": 4.0, "threshold": 0.7}, # In the first level the only parameter that matters is threshold, the rest is just for compatibility
+            {"max_goal_sampling_distance": 8.0, "threshold": 0.7},
+            {"max_goal_sampling_distance": 12.0, "threshold": 0.7},
+            {"max_goal_sampling_distance": 16.0, "threshold": 0.7},
+            {"max_goal_sampling_distance": 20.0, "threshold": 0.7},
         ]
 
     def _on_step(self) -> bool:
