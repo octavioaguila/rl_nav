@@ -1,4 +1,3 @@
-# point_net_extractor.py  ─────────────────────────────────────────────────────
 import torch
 import torch.nn as nn
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
@@ -8,16 +7,15 @@ class FeatureExtractor(BaseFeaturesExtractor):
     Implements the two-stage PointNet-style encoder with the distance channel
     converted on-the-fly:
         d_norm ∈ [-1,1]  →  d_m = max_range*(d_norm+1)/2
-        f_dist = 1 / (d_m - β)
+        f_prox = 1.0 - (d_m / max_range)  # 1.0 at 0m, 0.0 at max_range
 
     Args
     ----
     features_dim : size of the output embedding handed to the SAC heads
     n_lidar      : number of rays in the observation
-    max_range    : same constant you use inside the env (default 6 m), this has to be the same as the cutoff in the XML file.
-    beta         : small offset to avoid 1/0 (default 0.25 m)
+    max_range    : same constant you use inside the env (default 20 m)
     """
-    def __init__(self, observation_space, *, features_dim: int = 256, n_lidar: int = 449, max_distance_diagonal: float = 20.0, max_range: float = 20.0, beta: float = 0.25):
+    def __init__(self, observation_space, *, features_dim: int = 256, n_lidar: int = 449, max_distance_diagonal: float = 20.0, max_range: float = 20.0):
         super().__init__(observation_space, features_dim)
 
         self.n_lidar   = int(n_lidar)
@@ -25,7 +23,6 @@ class FeatureExtractor(BaseFeaturesExtractor):
         self.extra_dim = 2 + 1 + 2      # velocity (2), distance (1), angle (2)
         self.max_distance_diagonal = float(max_distance_diagonal)
         self.max_range = float(max_range)
-        self.beta      = float(beta)
 
         # ------------ shared point-wise MLP (32-64-128) ------------- #
         self.point_mlp = nn.Sequential(
@@ -45,7 +42,7 @@ class FeatureExtractor(BaseFeaturesExtractor):
     # ------------------------------------------------------------------ #
     def forward(self, obs_dict):
         """
-        obs: (B, n_lidar*3 + 4)
+        obs: (B, n_lidar*3 + 2)
         returns: (B, features_dim)
         """
         obs = obs_dict["observation"]
@@ -89,9 +86,11 @@ class FeatureExtractor(BaseFeaturesExtractor):
         d_norm = pts[..., 2]                                         # (B,N)
 
         d_m    = self.max_range * (d_norm + 1.0) * 0.5               # metres
-        inv_d  = 1.0 / torch.clamp(d_m - self.beta, min=1e-4)        # (B,N)
+        
+        # PROXIMITY: 1.0 when touching (0m), 0.0 when at max_range (20m)
+        proximity = torch.clamp(1.0 - (d_m / self.max_range), 0.0, 1.0) 
 
-        pts_proc = torch.cat([sincos, inv_d.unsqueeze(-1)], dim=-1)  # (B,N,3)
+        pts_proc = torch.cat([sincos, proximity.unsqueeze(-1)], dim=-1)  # (B,N,3)
 
         # ------------- point-wise MLP  ------------------------------ #
         pts_feat = self.point_mlp(pts_proc.view(-1, 3))              # (B*N,128)
