@@ -67,7 +67,7 @@ def train(train_xml_paths, val_xml_paths, total_steps, n_envs, max_ep_steps, log
         tau=0.005,
         buffer_size=1_000_000,
         train_freq=(1, "step"),
-        gradient_steps=-1,
+        gradient_steps=1,
         target_update_interval=2,
         tensorboard_log=os.path.join(log_dir, "tb"),
         verbose=1,
