@@ -40,7 +40,7 @@ class BunkerEnv(MujocoEnv):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
 
     def __init__(self, xml_path: str, frame_skip: int = 10, render_mode: str | None = None, n_lidar: int = 449, inference_mode: bool = False, 
-                max_goal_sampling_distance: float = 20.0, k_history_window: int = 10):
+                max_goal_sampling_distance: float = 8.0, k_history_window: int = 10):
 
         print("[Gym Bunker Env] Max goal sampling distance:", max_goal_sampling_distance)
         print("[Gym Bunker Env] K history window:", k_history_window)
@@ -360,7 +360,7 @@ class BunkerEnv(MujocoEnv):
         
         reward = np.full_like(d, -1.0, dtype=np.float32) # Base step penalty
         reward = np.where(is_success, 0.0, reward)       # Success reward
-        reward = np.where(is_collision, -1000.0, reward)  # Collision penalty (highest priority)
+        reward = np.where(is_collision, -100.0, reward)  # Collision penalty (highest priority)
 
         return reward
 
