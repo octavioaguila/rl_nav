@@ -63,7 +63,7 @@ def train(train_xml_paths, val_xml_paths, total_steps, n_envs, max_ep_steps, log
         batch_size=512,
         learning_rate=3e-4,
         learning_starts=n_envs * max_ep_steps,
-        gamma=0.98,
+        gamma=0.99,
         tau=0.005,
         buffer_size=1_000_000,
         train_freq=(1, "step"),

@@ -33,6 +33,7 @@ class FeatureExtractor(BaseFeaturesExtractor):
             nn.Linear(32, 64), nn.LeakyReLU(),
             nn.Linear(64, 128), nn.LeakyReLU(),
         )
+        self.ln_spatial = nn.LayerNorm(128)
 
         # ------------ fusion MLP (128 + extra_dim → features_dim) ----------- #
         self.fusion_mlp = nn.Sequential(
@@ -98,6 +99,7 @@ class FeatureExtractor(BaseFeaturesExtractor):
         pts_feat = pts_feat.view(B, self.n_lidar, 128)               # (B,N,128)
 
         global_feat, _ = torch.max(pts_feat, dim=1)                  # (B,128)
+        global_feat = self.ln_spatial(global_feat)
 
         fused = torch.cat([global_feat, vel, dist_norm, goal_dir_feat], dim=-1)           # (B, 133)
         return self.fusion_mlp(fused)                                # (B, features_dim)
