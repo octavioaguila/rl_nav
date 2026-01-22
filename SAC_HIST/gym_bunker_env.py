@@ -29,7 +29,7 @@ class BunkerEnv(MujocoEnv):
     | 1   | Angular velocity in robot's reference frame                                     | -1 (-0.5 rad/s)   | 1 (0.5 rad/s)     | BunkerVelocityController -> w_*_joint   | w_*_joint  | velocity (rad/s) |
 
     ## Observation Space
-    The observation space is a `Box(-1, 1, (n_lidar*3 + 3 + k_history_window*2), float64)` where the elements are as follows:
+    The observation space is a `Box(-1, 1, (n_lidar*3 + 3 + k_history_window*2), float32)` where the elements are as follows:
     | Index Range                                  | Observation Description                                                                        | Min   | Max   |
     |----------------------------------------------|------------------------------------------------------------------------------------------------|-------|-------|
     |           0 to n_lidar*3-1                   | LiDAR features (sin(alpha), cos(alpha), d_norm)                                                | -1    | 1     |
@@ -86,7 +86,7 @@ class BunkerEnv(MujocoEnv):
         
         # Observation space: all lidar features, relative goal, velocity history
         obs_dim = self.n_lidar * 3 + 3 + self.k_history * 2
-        observation_space = spaces.Box(low=-1.0, high=1.0, shape=(obs_dim,), dtype=np.float64)
+        observation_space = spaces.Box(low=-1.0, high=1.0, shape=(obs_dim,), dtype=np.float32)
         self.max_geom = 1_800
 
         # Call parent constructor (creates model/data/renderer)
@@ -122,7 +122,7 @@ class BunkerEnv(MujocoEnv):
         
         return linear_vel_body, angular_vel_body
 
-    def reset_model(self) -> NDArray[np.float64]:
+    def reset_model(self) -> NDArray[np.float32]:
 
         self.velocity_controller.reset()
 
@@ -206,7 +206,7 @@ class BunkerEnv(MujocoEnv):
         self._prev_dist = self._goal_xy_distance()
         self._is_final_goal = False  # This is an intermediate goal, not the final goal
         
-    def step(self, action: NDArray[np.float32]) -> tuple[NDArray[np.float64], float, bool, bool, dict]:
+    def step(self, action: NDArray[np.float32]) -> tuple[NDArray[np.float32], float, bool, bool, dict]:
         # Denormalize action from [-1, 1] to actual velocity limits
         v_cmd = action[0] * self.v_max
         w_cmd = action[1] * self.w_max
@@ -295,7 +295,7 @@ class BunkerEnv(MujocoEnv):
         # history is a deque of K arrays of shape (2,). Stack -> (K, 2) -> Flatten -> (K*2,)
         history_flat = np.array(self.history).flatten().astype(np.float32) # (K*2,)
         
-        obs = np.concatenate([pts_flat, relative_goal, history_flat]).astype(np.float64)  # shape (n_lidar_points*3 + 3 + K*2,)
+        obs = np.concatenate([pts_flat, relative_goal, history_flat]).astype(np.float32)  # shape (n_lidar_points*3 + 3 + K*2,)
         return obs
     
     def _relative_goal_vec(self) -> np.ndarray:

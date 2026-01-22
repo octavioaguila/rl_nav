@@ -87,7 +87,7 @@ def main():
             obs, reward, terminated, truncated, info = env.step(normalized_action)
 
             # Split observation
-            split_idx_lidar = env.n_lidar * 3
+            split_idx_lidar = 449 * 3
             split_idx_goal  = split_idx_lidar + 3
             
             lidar_flat   = obs[:split_idx_lidar]                 # (B, N*3)
