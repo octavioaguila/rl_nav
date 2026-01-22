@@ -34,7 +34,7 @@ class BunkerEnv(MujocoEnv):
     - `desired_goal`: `Box(-inf, inf, (3,), float32)` -> [x, y, yaw]
 
     ## Reward Function
-    r = (0 if success; -1000 if crash; else -1)
+    r = (0 if success; -100 if crash; else -1)
     """
 
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 10}
