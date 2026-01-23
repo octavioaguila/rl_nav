@@ -18,7 +18,7 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Variables
 run_name = "run_2"
 max_goal_sampling_distance = 20.0
-env_name = "test/world_16_hard"
+env_name = "test/world_66_medium"
 
 # Paths
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")

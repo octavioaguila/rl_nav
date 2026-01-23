@@ -16,16 +16,17 @@ from feature_extractor import FeatureExtractor
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Variables
-run_name = "run_1"
-max_goal_sampling_distance = 8.0
-env_name = "test/world_16_hard"
+run_name = "run_2"
+max_goal_sampling_distance = 20.0
+env_name = "test/world_17_easy"
+k_history_window = 10
 
 # Paths
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")
 ckpt = os.path.join(root, "SAC_HER_HIST", "log", run_name, "best_model", "best_model.zip")
 
 # Environment Setup
-env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode="human", max_goal_sampling_distance=max_goal_sampling_distance), 
+env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode="human", max_goal_sampling_distance=max_goal_sampling_distance, k_history_window=k_history_window), 
                                                 max_episode_steps=600)])
 
 # Get env constants for observation decoding
@@ -144,7 +145,8 @@ for ep in range(n_episodes):
 stats_output = []
 stats_output.append(f"\n{'='*60}")
 stats_output.append(f"INFERENCE RESULTS: {run_name} on {env_name}")
-stats_output.append(f"Training parameters: Max goal sampling distance: {max_goal_sampling_distance}")
+stats_output.append(f"Training parameters:\nMax goal sampling distance: {max_goal_sampling_distance}")
+stats_output.append(f"k_history_window: {k_history_window}")
 stats_output.append(f"{'='*60}")
 stats_output.append(f"Success Rate:      {successful_episodes/total_episodes*100:.1f}% ({successful_episodes}/{total_episodes})")
 stats_output.append(f"Collision Rate:    {crashed_episodes/total_episodes*100:.1f}% ({crashed_episodes}/{total_episodes})")

@@ -1,0 +1,3 @@
+mujoco==3.3.3
+stable-baselines3[extra]==2.7.1
+imageio==2.37.0

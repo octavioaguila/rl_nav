@@ -1,0 +1,103 @@
+# Mobile Robot Navigation with Reinforcement Learning
+
+This repository contains the implementation of various Reinforcement Learning (RL) architectural variants for mobile robot navigation. The project formulates the navigation task as a sequential Markov Decision Process (MDP) where a robot must navigate to a goal while avoiding obstacles.
+
+## Repository Structure
+
+All variant folders share the same internal structure but implement different approaches regarding reward formation, observation space, and training algorithms.
+
+### Architectural Variants
+
+*   **`SAC/`** (Baseline):
+    *   **Reward**: Dense (progress-based).
+    *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$).
+    *   **Description**: Uses Soft Actor-Critic with explicit relative goal information.
+
+*   **`SAC_HIST/`** (History-Augmented):
+    *   **Reward**: Dense.
+    *   **Observation**: History-augmented ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{H}_t]$).
+    *   **Description**: Incorporates a temporal buffer of past velocity commands ($\mathcal{H}_t$) to capture short-term motion patterns.
+
+*   **`SAC_HER/`** (Sparse Reward):
+    *   **Reward**: Sparse (goal-conditioned).
+    *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$).
+    *   **Description**: Uses Hindsight Experience Replay (HER) to learn from sparse rewards. Relative goal features are recomputed internally to support goal relabeling.
+
+*   **`SAC_HER_HIST/`** (Sparse + History):
+    *   **Reward**: Sparse.
+    *   **Observation**: History-augmented ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{H}_t]$).
+    *   **Description**: Combines HER with velocity history to handle both sparse rewards and partial observability/temporal context.
+
+### Assets
+
+*   **`assets/worlds/`**: Contains the procedural simulation environments.
+    *   Divided into **train**, **valid**, and **test** sets.
+    *   Each set contains MuJoCo XML files generated with varying obstacle densities (**easy**, **medium**, **hard**).
+    *   Includes the generator scripts used to create these reproducible environments via deterministic seeding.
+
+## Feature Extraction & Approach
+
+The project explores the impact of reward density, goal conditioning, and temporal context.
+*   **Shared Backbone**: All variants use a consistent spatial perception backbone (PointNet-style encoder for LiDAR) and action space.
+*   **Modular Design**: Feature extractors are designed to handle heterogeneous observations (spatial, goal, temporal) and fuse them into a unified latent representation.
+
+## Experimental Setup
+
+*   **Simulation**: MuJoCo.
+*   **Robot**: AgileX Bunker skid-steer platform.
+*   **Task**: Navigate to a goal within a predefined tolerance while avoiding collisions.
+*   **Evaluation**: Models are evaluated on unseen test worlds using metrics such as Success weighted by Path Length (SPL), Control Smoothness, and Mean Clearance Distance.
+
+## Environment Setup
+
+To run the code, you need to set up a Conda environment with the specific dependencies.
+
+### 0. Install Conda (if you haven't already)
+
+Follow the instructions in the [official Conda documentation](https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html) to install Miniconda.
+
+### 1. Create the Conda Environment
+
+Run the following command to create a new environment named `ssmm_gnc` with Python 3.10.12 and IPython:
+
+```bash
+conda create -n "ssmm_gnc" python=3.10.12 ipython
+```
+
+### 2. Activate the Environment and set PYTHONNOUSERSITE
+
+```bash
+conda activate ssmm_gnc
+conda env config vars set PYTHONNOUSERSITE=1
+```
+
+### 3. Install PyTorch
+
+Install PyTorch with CUDA 12.4 support:
+
+```bash
+pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+```
+
+### 4. Install Additional Requirements
+
+Install the remaining dependencies listed in `requeriments.txt`:
+
+```bash
+pip install -r requeriments.txt
+```
+
+## Inference & Results
+
+Each variant folder (`SAC`, `SAC_HIST`, `SAC_HER`, `SAC_HER_HIST`) contains a `sac_inference.py` script and a `inference_results/` directory where the evaluation metrics and logs are saved.
+
+### Running Inference
+
+To run an inference example (e.g., for the `SAC_HER` variant), navigate to the variant's directory and execute the inference script:
+
+```bash
+cd SAC_HER
+python3 sac_inference.py
+```
+
+This will load the default trained model, run evaluation episodes on the configured test worlds, and save the detailed metrics to `SAC_HER/inference_results/`.
