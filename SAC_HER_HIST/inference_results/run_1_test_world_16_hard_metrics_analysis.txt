@@ -1,0 +1,17 @@
+
+============================================================
+INFERENCE RESULTS: run_1 on test/world_16_hard
+Training parameters:
+Max goal sampling distance: 8.0
+k_history_window: 10
+============================================================
+Success Rate:      92.0% (184/200)
+Collision Rate:    6.5% (13/200)
+Timeout Rate:      1.5% (3/200)
+Mean Episode Len:  124.7 steps
+------------------------------
+SPL:               0.8483
+Mean Ang. Smooth:  5.388364
+Mean Lin. Smooth:  0.408730
+Mean Clearance:    1.3166 m
+============================================================

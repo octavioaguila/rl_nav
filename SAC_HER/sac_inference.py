@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------
-#  Run inference with a SAC policy trained in train_bunker.py
+#  Run inference with a SAC_HER policy trained in train_bunker.py
 # -------------------------------------------------------------
 import os
 import sys
@@ -18,7 +18,7 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Variables
 run_name = "run_1"
 max_goal_sampling_distance = 8.0
-env_name = "test/world_16_hard"
+env_name = "test/world_17_easy"
 
 # Paths
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")
@@ -32,9 +32,6 @@ env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode="human"
 raw_env = env.envs[0].unwrapped
 n_lidar = raw_env.n_lidar
 lidar_max_range = raw_env.lidar_max_range
-max_dist_diag = raw_env.max_distance_diagonal
-v_max = raw_env.v_max
-w_max = raw_env.w_max
 dt = raw_env.model.opt.timestep * raw_env.frame_skip
 
 model: SAC = SAC.load(ckpt, env, device="auto")
@@ -59,11 +56,6 @@ print(f"Starting Inference: {n_episodes} episodes...")
 for ep in range(n_episodes):
     obs = env.reset()
     
-    # Calculate initial distance for SPL using achieved and desired goals
-    start_pos = obs["achieved_goal"][0][:2]
-    goal_pos = obs["desired_goal"][0][:2]
-    initial_dist = np.linalg.norm(goal_pos - start_pos)
-    
     # Episode-specific trackers
     ep_path_length = 0
     ep_angular_smoothness = 0
@@ -72,7 +64,13 @@ for ep in range(n_episodes):
     last_pos = None
     last_ang_vel = 0
     last_linear_vel = 0
-
+    
+    # Calculate initial distance for SPL
+    # In SAC_HER, we get 'achieved_goal' and 'desired_goal' in obs
+    # obs is a dict-like from VecEnv (stacked arrays)
+    ag = obs['achieved_goal'][0]
+    dg = obs['desired_goal'][0]
+    initial_dist = np.linalg.norm(ag[:2] - dg[:2])
 
     # Run episode
     for step in range(max_ep_len):
@@ -82,17 +80,16 @@ for ep in range(n_episodes):
         # Metric Extraction
         inf = info[0]
         
-        # Use the "observation" part for LiDAR metrics, but avoid overwriting the dict
-        obs_vec = obs["observation"][0]
-
-        # LiDAR part is first n_lidar*3 elements
-        lidar_data = obs_vec[:n_lidar*3].reshape(-1, 3)
+        # SAC_HER: Dict observation. LiDAR is first part of 'observation' key.
+        # obs['observation'] has shape (1, dim).
+        lidar_colum = obs['observation'][0, :n_lidar*3]
+        lidar_data = lidar_colum.reshape(-1, 3)
         d_norm = lidar_data[:, 2] # 3rd column is normalized distance
         # d_norm is in [-1, 1], map back to [0, lidar_max_range]
         d_real = (d_norm + 1.0) / 2.0 * lidar_max_range
         min_scan = np.min(d_real)
 
-        # Get robot velocities from the environment (more accurate than normalized obs)
+        # Get velocities from environment
         curr_v, curr_ang_vel = raw_env.get_robot_velocities()
         curr_v = curr_v[0]
         curr_ang_vel = curr_ang_vel[2]
