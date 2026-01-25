@@ -16,9 +16,9 @@ from feature_extractor import FeatureExtractor
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Variables
-run_name = "run_1"
-max_goal_sampling_distance = 8.0
-env_name = "test/world_17_easy"
+run_name = "run_2"
+max_goal_sampling_distance = 20.0
+env_name = "test/world_16_hard"
 
 # Paths
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")

@@ -115,7 +115,7 @@ if __name__ == "__main__":
     val_xml_pool.sort()
 
     # Parameters
-    total_steps = 2_000_000
+    total_steps = 3_000_000
     n_envs = 8
     
     base_log_dir = os.path.join(root, "log")
