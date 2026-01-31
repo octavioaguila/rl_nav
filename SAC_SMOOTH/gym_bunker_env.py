@@ -354,7 +354,6 @@ class BunkerEnv(MujocoEnv):
         delta_d = (self._prev_dist - d_now)
 
         reward = delta_d
-        print("[ENV] delta_d reward: ", delta_d)
 
         # Smoothness reward: minimize abrupt changes in angular velocity
         _, w_curr_vector = self.get_robot_velocities()
@@ -363,7 +362,6 @@ class BunkerEnv(MujocoEnv):
         diff_w = w_curr - self._prev_w
         smoothness_cost = diff_w ** 2
 
-        print("[ENV] smoothness_cost reward: ", smoothness_cost)
         reward -= smoothness_cost
         
         self._prev_w = w_curr
