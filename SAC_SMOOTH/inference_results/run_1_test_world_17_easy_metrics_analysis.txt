@@ -1,0 +1,15 @@
+
+============================================================
+INFERENCE RESULTS: run_1 on test/world_17_easy
+Training parameters: Max goal sampling distance: 8.0
+============================================================
+Success Rate:      99.0% (198/200)
+Collision Rate:    0.5% (1/200)
+Timeout Rate:      0.5% (1/200)
+Mean Episode Len:  111.3 steps
+------------------------------
+SPL:               0.9528
+Mean Ang. Smooth:  0.505928
+Mean Lin. Smooth:  0.349234
+Mean Clearance:    2.4817 m
+============================================================
