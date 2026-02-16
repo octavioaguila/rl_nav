@@ -4,14 +4,16 @@ INFERENCE RESULTS: run_1 on test/world_66_medium
 Training parameters:
 Max goal sampling distance: 8.0
 k_history_window: 10
+Method of Batch Means: 20 batches × 10 episodes = 200 total
+95% CI computed over 20 batch means (t-distribution, df=19)
 ============================================================
-Success Rate:      91.5% (183/200)
-Collision Rate:    2.5% (5/200)
-Timeout Rate:      6.0% (12/200)
-Mean Episode Len:  155.8 steps
+Success Rate:      91.5% ± 3.8% (183/200)
+Collision Rate:    0.5% ± 1.0% (1/200)
+Timeout Rate:      8.0% ± 3.6% (16/200)
+Mean Episode Len:  168.2 ± 18.8 steps
 ------------------------------
-SPL:               0.8083
-Mean Ang. Smooth:  12.604030
-Mean Lin. Smooth:  0.492509
-Mean Clearance:    1.4727 m
+SPL:               0.8229 ± 0.0393
+Mean Ang. Smooth:  14.250189 ± 1.347450
+Mean Lin. Smooth:  0.473201 ± 0.043370
+Mean Clearance:    1.4929 ± 0.0858 m
 ============================================================

@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------
 #  Run inference with a SAC_HER policy trained in train_bunker.py
+#  Method of Batch Means: 20 batches × 10 episodes = 200 total
 # -------------------------------------------------------------
 import os
 import sys
 import time
 import numpy as np
+from scipy import stats
 from stable_baselines3 import SAC
 from stable_baselines3.common.vec_env import DummyVecEnv
 from gym_bunker_env import BunkerEnv
@@ -16,9 +18,9 @@ from feature_extractor import FeatureExtractor
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Variables
-run_name = "run_2"
-max_goal_sampling_distance = 20.0
-env_name = "test/world_16_hard"
+run_name = "run_1"
+max_goal_sampling_distance = 8.0
+env_name = "test/world_17_easy"
 
 # Paths
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")
@@ -35,126 +37,172 @@ lidar_max_range = raw_env.lidar_max_range
 dt = raw_env.model.opt.timestep * raw_env.frame_skip
 
 model: SAC = SAC.load(ckpt, env, device="auto")
-n_episodes      = 200
 deterministic   = True
 max_ep_len      = 600
 
-# Trackers
-successful_episodes = 0
-crashed_episodes = 0
-truncated_episodes = 0
-total_episodes = 0
+# ── Batch Means Configuration ────────────────────────────────
+n_batches       = 20
+eps_per_batch   = 10
+n_episodes      = n_batches * eps_per_batch  # 200 total
 
-episode_lengths = []
-angular_path_smoothness_list = []
-linear_path_smoothness_list = []
-spl_list = []
-avg_clearance_list = []
+# ── CI helper (applied to the 20 batch means) ────────────────
+def batch_ci95(batch_means):
+    """Return (grand_mean, ci_half_width) from a list of batch means."""
+    arr = np.array(batch_means, dtype=float)
+    n = len(arr)
+    mean = np.mean(arr)
+    if n < 2:
+        return mean, 0.0
+    sd = np.std(arr, ddof=1)
+    h = stats.t.ppf(0.975, n - 1) * sd / np.sqrt(n)
+    return mean, h
 
-print(f"Starting Inference: {n_episodes} episodes...")
+# ── Batch-level accumulators ─────────────────────────────────
+batch_success_rates = []
+batch_collision_rates = []
+batch_timeout_rates = []
+batch_ep_lengths = []
+batch_spl = []
+batch_ang_smooth = []
+batch_lin_smooth = []
+batch_clearance = []
 
-for ep in range(n_episodes):
-    obs = env.reset()
-    
-    # Episode-specific trackers
-    ep_path_length = 0
-    ep_angular_smoothness = 0
-    ep_linear_smoothness = 0
-    ep_clearance = []
-    last_pos = None
-    last_ang_vel = 0
-    last_linear_vel = 0
-    
-    # Calculate initial distance for SPL
-    # In SAC_HER, we get 'achieved_goal' and 'desired_goal' in obs
-    # obs is a dict-like from VecEnv (stacked arrays)
-    ag = obs['achieved_goal'][0]
-    dg = obs['desired_goal'][0]
-    initial_dist = np.linalg.norm(ag[:2] - dg[:2])
+# Global counters (for raw totals in the report)
+total_successes  = 0
+total_collisions = 0
+total_timeouts   = 0
+total_episodes   = 0
 
-    # Run episode
-    for step in range(max_ep_len):
-        action, _ = model.predict(obs, deterministic=deterministic)
-        obs, reward, terminated, info = env.step(action)
-        
-        # Metric Extraction
-        inf = info[0]
-        
-        # SAC_HER: Dict observation. LiDAR is first part of 'observation' key.
-        # obs['observation'] has shape (1, dim).
-        lidar_colum = obs['observation'][0, :n_lidar*3]
-        lidar_data = lidar_colum.reshape(-1, 3)
-        d_norm = lidar_data[:, 2] # 3rd column is normalized distance
-        # d_norm is in [-1, 1], map back to [0, lidar_max_range]
-        d_real = (d_norm + 1.0) / 2.0 * lidar_max_range
-        min_scan = np.min(d_real)
+print(f"Starting Inference: {n_batches} batches × {eps_per_batch} episodes = {n_episodes} total")
 
-        # Get velocities from environment
-        curr_v, curr_ang_vel = raw_env.get_robot_velocities()
-        curr_v = curr_v[0]
-        curr_ang_vel = curr_ang_vel[2]
+for batch in range(n_batches):
+    b_spl = []
+    b_ang = []
+    b_lin = []
+    b_clr = []
+    b_len = []
+    b_successes = 0
+    b_collisions = 0
+    b_timeouts = 0
 
-        # Approximate distance traveled in this step
-        step_dist = abs(curr_v) * dt
-        ep_path_length += step_dist
+    for ep_in_batch in range(eps_per_batch):
+        global_ep = batch * eps_per_batch + ep_in_batch
+        obs = env.reset()
 
-        # Smoothness
-        ep_angular_smoothness += ((curr_ang_vel - last_ang_vel)/ dt)**2
-        ep_linear_smoothness += ((curr_v - last_linear_vel) / dt)**2
-        last_ang_vel = curr_ang_vel
-        last_linear_vel = curr_v
+        ep_path_length = 0
+        ep_angular_smoothness = 0
+        ep_linear_smoothness = 0
+        ep_clearance = []
+        last_ang_vel = 0
+        last_linear_vel = 0
 
-        # Clearance
-        ep_clearance.append(min_scan)
+        # Calculate initial distance for SPL
+        # In SAC_HER, we get 'achieved_goal' and 'desired_goal' in obs
+        ag = obs['achieved_goal'][0]
+        dg = obs['desired_goal'][0]
+        initial_dist = np.linalg.norm(ag[:2] - dg[:2])
 
-        if terminated[0] or inf.get("TimeLimit.truncated", False):
-            break
+        for step in range(max_ep_len):
+            action, _ = model.predict(obs, deterministic=deterministic)
+            obs, reward, terminated, info = env.step(action)
 
-    # Outcome Logic
-    steps_taken = step + 1
-    episode_lengths.append(steps_taken)
-    
-    # Calculate SPL for this episode
-    is_success = inf.get("is_success", False)
-    if is_success:
-        successful_episodes += 1
-        outcome = "SUCCESS"
-        # SPL formula: S * (d_init / max(d_init, path_length))
-        spl = initial_dist / max(initial_dist, ep_path_length)
-    elif inf.get("collision", False):
-        crashed_episodes += 1
-        outcome = "CRASH"
-        spl = 0
-    else:
-        truncated_episodes += 1
-        outcome = "TIMEOUT"
-        spl = 0
+            inf = info[0]
 
-    spl_list.append(spl)
-    angular_smoothness = ep_angular_smoothness / steps_taken
-    linear_smoothness = ep_linear_smoothness / steps_taken
-    angular_path_smoothness_list.append(angular_smoothness)
-    linear_path_smoothness_list.append(linear_smoothness)
-    avg_clearance_list.append(np.mean(ep_clearance))
-    
-    total_episodes += 1
-    print(f"[EP {ep+1}/{n_episodes}] {outcome} | Steps: {steps_taken} | Ang. Smoothness: {angular_smoothness:.4f} Lin. Smoothness: {linear_smoothness}")
+            # SAC_HER: Dict observation. LiDAR is first part of 'observation' key.
+            lidar_colum = obs['observation'][0, :n_lidar*3]
+            lidar_data = lidar_colum.reshape(-1, 3)
+            d_norm = lidar_data[:, 2]
+            d_real = (d_norm + 1.0) / 2.0 * lidar_max_range
+            min_scan = np.min(d_real)
 
-# Final Stats Calculations
+            curr_v, curr_ang_vel = raw_env.get_robot_velocities()
+            curr_v = curr_v[0]
+            curr_ang_vel = curr_ang_vel[2]
+
+            step_dist = abs(curr_v) * dt
+            ep_path_length += step_dist
+
+            ep_angular_smoothness += ((curr_ang_vel - last_ang_vel) / dt)**2
+            ep_linear_smoothness += ((curr_v - last_linear_vel) / dt)**2
+            last_ang_vel = curr_ang_vel
+            last_linear_vel = curr_v
+
+            ep_clearance.append(min_scan)
+
+            if terminated[0] or inf.get("TimeLimit.truncated", False):
+                break
+
+        steps_taken = step + 1
+        is_success = inf.get("is_success", False)
+        if is_success:
+            b_successes += 1
+            outcome = "SUCCESS"
+            spl = initial_dist / max(initial_dist, ep_path_length)
+        elif inf.get("collision", False):
+            b_collisions += 1
+            outcome = "CRASH"
+            spl = 0
+        else:
+            b_timeouts += 1
+            outcome = "TIMEOUT"
+            spl = 0
+
+        ang_smooth = ep_angular_smoothness / steps_taken
+        lin_smooth = ep_linear_smoothness / steps_taken
+
+        b_spl.append(spl)
+        b_ang.append(ang_smooth)
+        b_lin.append(lin_smooth)
+        b_clr.append(np.mean(ep_clearance))
+        b_len.append(steps_taken)
+
+        print(f"[Batch {batch+1}/{n_batches} | EP {ep_in_batch+1}/{eps_per_batch}] {outcome} "
+              f"| Steps: {steps_taken} | Ang: {ang_smooth:.4f} | Lin: {lin_smooth:.4f}")
+
+    # ── Store batch means ─────────────────────────────────────
+    batch_success_rates.append(b_successes / eps_per_batch)
+    batch_collision_rates.append(b_collisions / eps_per_batch)
+    batch_timeout_rates.append(b_timeouts / eps_per_batch)
+    batch_ep_lengths.append(np.mean(b_len))
+    batch_spl.append(np.mean(b_spl))
+    batch_ang_smooth.append(np.mean(b_ang))
+    batch_lin_smooth.append(np.mean(b_lin))
+    batch_clearance.append(np.mean(b_clr))
+
+    total_successes  += b_successes
+    total_collisions += b_collisions
+    total_timeouts   += b_timeouts
+    total_episodes   += eps_per_batch
+
+    print(f"  >> Batch {batch+1} done — SR: {b_successes/eps_per_batch*100:.0f}%, "
+          f"SPL: {np.mean(b_spl):.4f}, Clr: {np.mean(b_clr):.4f}")
+
+# ── Final Stats (Method of Batch Means) ──────────────────────
+sr_mean,  sr_ci  = batch_ci95(batch_success_rates)
+cr_mean,  cr_ci  = batch_ci95(batch_collision_rates)
+tr_mean,  tr_ci  = batch_ci95(batch_timeout_rates)
+el_mean,  el_ci  = batch_ci95(batch_ep_lengths)
+spl_mean, spl_ci = batch_ci95(batch_spl)
+ang_mean, ang_ci = batch_ci95(batch_ang_smooth)
+lin_mean, lin_ci = batch_ci95(batch_lin_smooth)
+clr_mean, clr_ci = batch_ci95(batch_clearance)
+
 stats_output = []
 stats_output.append(f"\n{'='*60}")
 stats_output.append(f"INFERENCE RESULTS: {run_name} on {env_name}")
 stats_output.append(f"Training parameters: Max goal sampling distance: {max_goal_sampling_distance}")
+stats_output.append(f"Method of Batch Means: {n_batches} batches × {eps_per_batch} episodes = {n_episodes} total")
+stats_output.append(f"95% CI computed over {n_batches} batch means (t-distribution, df={n_batches-1})")
 stats_output.append(f"{'='*60}")
-stats_output.append(f"Success Rate:      {successful_episodes/total_episodes*100:.1f}% ({successful_episodes}/{total_episodes})")
-stats_output.append(f"Collision Rate:    {crashed_episodes/total_episodes*100:.1f}% ({crashed_episodes}/{total_episodes})")
-stats_output.append(f"Timeout Rate:      {truncated_episodes/total_episodes*100:.1f}% ({truncated_episodes}/{total_episodes})")
-stats_output.append(f"Mean Episode Len:  {np.mean(episode_lengths):.1f} steps")
+stats_output.append(f"Success Rate:      {sr_mean*100:.1f}% ± {sr_ci*100:.1f}% ({total_successes}/{total_episodes})")
+stats_output.append(f"Collision Rate:    {cr_mean*100:.1f}% ± {cr_ci*100:.1f}% ({total_collisions}/{total_episodes})")
+stats_output.append(f"Timeout Rate:      {tr_mean*100:.1f}% ± {tr_ci*100:.1f}% ({total_timeouts}/{total_episodes})")
+stats_output.append(f"Mean Episode Len:  {el_mean:.1f} ± {el_ci:.1f} steps")
 stats_output.append(f"-"*30)
-stats_output.append(f"SPL:               {np.mean(spl_list):.4f}")
-stats_output.append(f"Mean Ang. Smooth:  {np.mean(angular_path_smoothness_list):.6f}")
-stats_output.append(f"Mean Lin. Smooth:  {np.mean(linear_path_smoothness_list):.6f}")
-stats_output.append(f"Mean Clearance:    {np.mean(avg_clearance_list):.4f} m")
+stats_output.append(f"SPL:               {spl_mean:.4f} ± {spl_ci:.4f}")
+stats_output.append(f"Mean Ang. Smooth:  {ang_mean:.6f} ± {ang_ci:.6f}")
+stats_output.append(f"Mean Lin. Smooth:  {lin_mean:.6f} ± {lin_ci:.6f}")
+stats_output.append(f"Mean Clearance:    {clr_mean:.4f} ± {clr_ci:.4f} m")
 stats_output.append(f"{'='*60}")
 
 stats_str = "\n".join(stats_output)
