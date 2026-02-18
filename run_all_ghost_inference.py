@@ -49,11 +49,11 @@ os.makedirs(output_dir, exist_ok=True)
 
 # ========================== Variant Definitions ==========================
 VARIANTS = [
-    {"name": "SAC",          "obs_type": "flat", "env_kwargs": {}},
-    {"name": "SAC_HER",      "obs_type": "dict", "env_kwargs": {}},
-    {"name": "SAC_SMOOTH",   "obs_type": "flat", "env_kwargs": {}},
-    {"name": "SAC_HIST",     "obs_type": "flat", "env_kwargs": {"k_history_window": 10}},
-    {"name": "SAC_HER_HIST", "obs_type": "dict", "env_kwargs": {"k_history_window": 10}},
+    {"name": "SAC_Dense",          "obs_type": "flat", "env_kwargs": {}},
+    {"name": "SAC_Sparse_HER",     "obs_type": "dict", "env_kwargs": {}},
+    {"name": "SAC_Penalized",      "obs_type": "flat", "env_kwargs": {}},
+    {"name": "SAC_Dense_Hist",     "obs_type": "flat", "env_kwargs": {"k_history_window": 10}},
+    {"name": "SAC_Sparse_HER_Hist", "obs_type": "dict", "env_kwargs": {"k_history_window": 10}},
 ]
 
 # ========================== Worker Script (runs in subprocess) ==========================

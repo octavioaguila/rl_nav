@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------
-#  Ghost Trajectory Inference for SAC_SMOOTH
+#  Ghost Trajectory Inference for SAC-Dense + Hist
 #  Runs a single episode with a fixed initial/goal pose,
 #  stores qpos at every step, and renders a ghosted trajectory.
 # -------------------------------------------------------------
@@ -22,6 +22,7 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 run_name = "run_1"
 max_goal_sampling_distance = 8.0
 env_name = "test/world_16_hard"
+k_history_window = 10
 
 # Initial and goal poses: [x, y, theta]
 initial_pose = [0.0, 0.0, 0.0]
@@ -44,9 +45,9 @@ ghost_cam_elevation = -90.0
 
 # ========================== Environment Setup ==========================
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")
-ckpt = os.path.join(root, "SAC_SMOOTH", "log", run_name, "best_model", "best_model.zip")
+ckpt = os.path.join(root, "SAC_Dense_Hist", "log", run_name, "best_model", "best_model.zip")
 
-env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode=None, max_goal_sampling_distance=max_goal_sampling_distance), 
+env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode=None, max_goal_sampling_distance=max_goal_sampling_distance, k_history_window=k_history_window), 
                                                 max_episode_steps=600)])
 
 raw_env = env.envs[0].unwrapped
@@ -86,7 +87,7 @@ print(f"[Ghost Inference] Collected {len(episode_qpos)} qpos states")
 
 # ========================== Ghost Trajectory Rendering ==========================
 if ENABLE_GHOST_RENDERING:
-    results_dir = os.path.join(root, "SAC_SMOOTH", "inference_results")
+    results_dir = os.path.join(root, "SAC_Dense_Hist", "inference_results")
     os.makedirs(results_dir, exist_ok=True)
     output_path = os.path.join(results_dir, f"{run_name}_ghost_trajectory.png")
     

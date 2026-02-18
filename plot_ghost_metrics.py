@@ -24,23 +24,23 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 RESULTS_DIR = os.path.join(ROOT, "ghost_trajectory_results")
 RUN_NAME = "run_1"
 
-VARIANTS = ["SAC", "SAC_HER", "SAC_SMOOTH", "SAC_HIST", "SAC_HER_HIST"]
+VARIANTS = ["SAC_Dense", "SAC_Sparse_HER", "SAC_Penalized", "SAC_Dense_Hist", "SAC_Sparse_HER_Hist"]
 
 # Publication-quality styling
 COLORS = {
-    "SAC":          "#1f77b4",
-    "SAC_HER":      "#ff7f0e",
-    "SAC_SMOOTH":   "#2ca02c",
-    "SAC_HIST":     "#d62728",
-    "SAC_HER_HIST": "#9467bd",
+    "SAC_Dense":          "#1f77b4",
+    "SAC_Sparse_HER":     "#ff7f0e",
+    "SAC_Penalized":      "#2ca02c",
+    "SAC_Dense_Hist":     "#d62728",
+    "SAC_Sparse_HER_Hist": "#9467bd",
 }
 
 LABELS = {
-    "SAC":          "SAC-Dense",
-    "SAC_HER":      "SAC-Sparse (HER)",
-    "SAC_SMOOTH":   "SAC-Penalized",
-    "SAC_HIST":     "SAC-Dense + Hist",
-    "SAC_HER_HIST": "SAC-Sparse (HER) + Hist",
+    "SAC_Dense":          "SAC-Dense",
+    "SAC_Sparse_HER":     "SAC-Sparse (HER)",
+    "SAC_Penalized":      "SAC-Penalized",
+    "SAC_Dense_Hist":     "SAC-Dense + Hist",
+    "SAC_Sparse_HER_Hist": "SAC-Sparse (HER) + Hist",
 }
 
 DPI = 300

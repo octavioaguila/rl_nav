@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------
-#  Run inference with a SAC policy trained in train_bunker.py
+#  Run inference with a SAC-Dense policy trained in train_bunker.py
 #  Method of Batch Means: 20 batches × 10 episodes = 200 total
 # -------------------------------------------------------------
 import os
@@ -24,7 +24,7 @@ env_name = "test/world_17_easy"
 
 # Paths
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")
-ckpt = os.path.join(root, "SAC", "log", run_name, "best_model", "best_model.zip")
+ckpt = os.path.join(root, "SAC_Dense", "log", run_name, "best_model", "best_model.zip")
 
 # Environment Setup
 env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode="human", max_goal_sampling_distance=max_goal_sampling_distance), 
@@ -214,7 +214,7 @@ stats_str = "\n".join(stats_output)
 print(stats_str)
 
 # Save Results
-results_dir = os.path.join(root, "SAC", "inference_results")
+results_dir = os.path.join(root, "SAC_Dense", "inference_results")
 os.makedirs(results_dir, exist_ok=True)
 results_file = os.path.join(results_dir, f"{run_name}_{env_name.replace('/', '_')}_metrics_analysis.txt")
 with open(results_file, "w") as f:

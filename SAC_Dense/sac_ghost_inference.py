@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------
-#  Ghost Trajectory Inference for SAC_HIST
+#  Ghost Trajectory Inference for SAC-Dense
 #  Runs a single episode with a fixed initial/goal pose,
 #  stores qpos at every step, and renders a ghosted trajectory.
 # -------------------------------------------------------------
@@ -22,36 +22,37 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 run_name = "run_1"
 max_goal_sampling_distance = 8.0
 env_name = "test/world_16_hard"
-k_history_window = 10
 
 # Initial and goal poses: [x, y, theta]
-initial_pose = [0.0, 0.0, 0.0]
-goal_pose    = [5.0, 5.0, 0.0]
+initial_pose = [-3.0, 1.0, 0.0]
+goal_pose    = [4.5, -1.0, 0.0]
 
 # Ghost rendering settings
 ENABLE_GHOST_RENDERING = True
-ghost_subsample        = 5
-ghost_alpha            = 0.4
+ghost_subsample        = 5       # Take every N-th state
+ghost_alpha            = 1.0     # Base alpha blending coefficient
 ghost_width            = 1920
 ghost_height           = 1080
 ghost_dpi              = 300
-ghost_temporal_fade    = True
+ghost_temporal_fade    = True    # Earlier poses more transparent
 
 # Camera configuration (top-down bird's eye)
-ghost_cam_lookat   = [3.0, 3.0, 0.0]
+ghost_cam_lookat   = [3.0, 3.0, 0.0]  # Center of the world
 ghost_cam_distance = 18.0
 ghost_cam_azimuth  = 90.0
 ghost_cam_elevation = -90.0
 
 # ========================== Environment Setup ==========================
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")
-ckpt = os.path.join(root, "SAC_HIST", "log", run_name, "best_model", "best_model.zip")
+ckpt = os.path.join(root, "SAC_Dense", "log", run_name, "best_model", "best_model.zip")
 
-env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode=None, max_goal_sampling_distance=max_goal_sampling_distance, k_history_window=k_history_window), 
+# Use render_mode=None for offscreen (no GUI window)
+env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode=None, max_goal_sampling_distance=max_goal_sampling_distance), 
                                                 max_episode_steps=600)])
 
 raw_env = env.envs[0].unwrapped
 
+# Load model
 model: SAC = SAC.load(ckpt, env, device="auto")
 deterministic = True
 max_ep_len    = 600
@@ -60,19 +61,23 @@ max_ep_len    = 600
 print(f"[Ghost Inference] Setting manual pose: start={initial_pose}, goal={goal_pose}")
 obs = env.reset()
 
-# Set manual pose
+# Set manual pose (bypasses random sampling)
 manual_obs = raw_env.set_manual_pose(initial_pose, goal_pose)
+
+# The DummyVecEnv wraps observations, so we need to re-wrap for the model
+# For flat obs envs, we can stack it
 obs = np.expand_dims(manual_obs, axis=0)
 
 # Store qpos trajectory
 episode_qpos = []
-episode_qpos.append(raw_env.data.qpos.copy())
+episode_qpos.append(raw_env.data.qpos.copy())  # Store initial state
 
 print(f"[Ghost Inference] Running episode...")
 for step in range(max_ep_len):
     action, _ = model.predict(obs, deterministic=deterministic)
     obs, reward, terminated, info = env.step(action)
     
+    # Store qpos at every step
     episode_qpos.append(raw_env.data.qpos.copy())
     
     inf = info[0]
@@ -87,10 +92,11 @@ print(f"[Ghost Inference] Collected {len(episode_qpos)} qpos states")
 
 # ========================== Ghost Trajectory Rendering ==========================
 if ENABLE_GHOST_RENDERING:
-    results_dir = os.path.join(root, "SAC_HIST", "inference_results")
+    results_dir = os.path.join(root, "SAC_Dense", "inference_results")
     os.makedirs(results_dir, exist_ok=True)
     output_path = os.path.join(results_dir, f"{run_name}_ghost_trajectory.png")
     
+    # Use the model from the environment (same XML)
     mj_model = raw_env.model
     
     render_ghost_trajectory(

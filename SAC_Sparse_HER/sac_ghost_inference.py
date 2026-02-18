@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------
-#  Ghost Trajectory Inference for SAC_HER_HIST
+#  Ghost Trajectory Inference for SAC-Sparse (HER)
 #  Runs a single episode with a fixed initial/goal pose,
 #  stores qpos at every step, and renders a ghosted trajectory.
 # -------------------------------------------------------------
@@ -20,12 +20,11 @@ from lib.ghost_trajectory_renderer import render_ghost_trajectory
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 run_name = "run_1"
-max_goal_sampling_distance = 20.0
+max_goal_sampling_distance = 8.0
 env_name = "test/world_16_hard"
-k_history_window = 10
 
 # Initial and goal poses: [x, y, theta]
-initial_pose = [0.0, 0.0, 0.0]
+initial_pose = [3.0, 1.0, 0.0]
 goal_pose    = [5.0, 5.0, 0.0]
 
 # Ghost rendering settings
@@ -45,9 +44,9 @@ ghost_cam_elevation = -90.0
 
 # ========================== Environment Setup ==========================
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")
-ckpt = os.path.join(root, "SAC_HER_HIST", "log", run_name, "best_model", "best_model.zip")
+ckpt = os.path.join(root, "SAC_Sparse_HER", "log", run_name, "best_model", "best_model.zip")
 
-env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode=None, max_goal_sampling_distance=max_goal_sampling_distance, k_history_window=k_history_window), 
+env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode=None, max_goal_sampling_distance=max_goal_sampling_distance), 
                                                 max_episode_steps=600)])
 
 raw_env = env.envs[0].unwrapped
@@ -60,10 +59,10 @@ max_ep_len    = 600
 print(f"[Ghost Inference] Setting manual pose: start={initial_pose}, goal={goal_pose}")
 obs = env.reset()
 
-# Set manual pose — SAC_HER_HIST returns a dict obs
+# Set manual pose — SAC-Sparse (HER) returns a dict obs
 manual_obs = raw_env.set_manual_pose(initial_pose, goal_pose)
 
-# Re-wrap dict obs for DummyVecEnv
+# Re-wrap dict obs for DummyVecEnv: each value needs batch dim
 obs = {k: np.expand_dims(v, axis=0) for k, v in manual_obs.items()}
 
 # Store qpos trajectory
@@ -89,7 +88,7 @@ print(f"[Ghost Inference] Collected {len(episode_qpos)} qpos states")
 
 # ========================== Ghost Trajectory Rendering ==========================
 if ENABLE_GHOST_RENDERING:
-    results_dir = os.path.join(root, "SAC_HER_HIST", "inference_results")
+    results_dir = os.path.join(root, "SAC_Sparse_HER", "inference_results")
     os.makedirs(results_dir, exist_ok=True)
     output_path = os.path.join(results_dir, f"{run_name}_ghost_trajectory.png")
     

@@ -8,25 +8,30 @@ All variant folders share the same internal structure but implement different ap
 
 ### Architectural Variants
 
-*   **`SAC/`** (Baseline):
+*   **`SAC_Dense/`** (SAC-Dense):
     *   **Reward**: Dense (progress-based).
     *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$).
     *   **Description**: Uses Soft Actor-Critic with explicit relative goal information.
 
-*   **`SAC_HIST/`** (History-Augmented):
+*   **`SAC_Dense_Hist/`** (SAC-Dense + Hist):
     *   **Reward**: Dense.
     *   **Observation**: History-augmented ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{H}_t]$).
     *   **Description**: Incorporates a temporal buffer of past velocity commands ($\mathcal{H}_t$) to capture short-term motion patterns.
 
-*   **`SAC_HER/`** (Sparse Reward):
+*   **`SAC_Sparse_HER/`** (SAC-Sparse (HER)):
     *   **Reward**: Sparse (goal-conditioned).
     *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$).
     *   **Description**: Uses Hindsight Experience Replay (HER) to learn from sparse rewards. Relative goal features are recomputed internally to support goal relabeling.
 
-*   **`SAC_HER_HIST/`** (Sparse + History):
+*   **`SAC_Sparse_HER_Hist/`** (SAC-Sparse (HER) + Hist):
     *   **Reward**: Sparse.
     *   **Observation**: History-augmented ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{H}_t]$).
     *   **Description**: Combines HER with velocity history to handle both sparse rewards and partial observability/temporal context.
+
+*   **`SAC_Penalized/`** (SAC-Penalized):
+    *   **Reward**: Dense with angular-acceleration penalty.
+    *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$).
+    *   **Description**: Uses explicit motion cost penalties to encourage smoother control outputs.
 
 ### Assets
 
@@ -89,15 +94,15 @@ pip install -r requeriments.txt
 
 ## Inference & Results
 
-Each variant folder (`SAC`, `SAC_HIST`, `SAC_HER`, `SAC_HER_HIST`) contains a `sac_inference.py` script and a `inference_results/` directory where the evaluation metrics and logs are saved.
+Each variant folder (`SAC_Dense`, `SAC_Dense_Hist`, `SAC_Sparse_HER`, `SAC_Sparse_HER_Hist`, `SAC_Penalized`) contains a `sac_inference.py` script and a `inference_results/` directory where the evaluation metrics and logs are saved.
 
 ### Running Inference
 
-To run an inference example (e.g., for the `SAC_HER` variant), navigate to the variant's directory and execute the inference script:
+To run an inference example (e.g., for the `SAC_Sparse_HER` variant), navigate to the variant's directory and execute the inference script:
 
 ```bash
-cd SAC_HER
+cd SAC_Sparse_HER
 python3 sac_inference.py
 ```
 
-This will load the default trained model, run evaluation episodes on the configured test worlds, and save the detailed metrics to `SAC_HER/inference_results/`.
+This will load the default trained model, run evaluation episodes on the configured test worlds, and save the detailed metrics to `SAC_Sparse_HER/inference_results/`.

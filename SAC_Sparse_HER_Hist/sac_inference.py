@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------
-#  Run inference with a SAC_HER policy trained in train_bunker.py
+#  Run inference with a SAC-Sparse (HER) + Hist policy trained in train_bunker.py
 #  Method of Batch Means: 20 batches × 10 episodes = 200 total
 # -------------------------------------------------------------
 import os
@@ -21,13 +21,14 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 run_name = "run_1"
 max_goal_sampling_distance = 8.0
 env_name = "test/world_17_easy"
+k_history_window = 10
 
 # Paths
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")
-ckpt = os.path.join(root, "SAC_HER", "log", run_name, "best_model", "best_model.zip")
+ckpt = os.path.join(root, "SAC_Sparse_HER_Hist", "log", run_name, "best_model", "best_model.zip")
 
 # Environment Setup
-env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode="human", max_goal_sampling_distance=max_goal_sampling_distance), 
+env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode="human", max_goal_sampling_distance=max_goal_sampling_distance, k_history_window=k_history_window), 
                                                 max_episode_steps=600)])
 
 # Get env constants for observation decoding
@@ -97,7 +98,7 @@ for batch in range(n_batches):
         last_linear_vel = 0
 
         # Calculate initial distance for SPL
-        # In SAC_HER, we get 'achieved_goal' and 'desired_goal' in obs
+        # In SAC-Sparse (HER) + Hist, we get 'achieved_goal' and 'desired_goal' in obs
         ag = obs['achieved_goal'][0]
         dg = obs['desired_goal'][0]
         initial_dist = np.linalg.norm(ag[:2] - dg[:2])
@@ -108,7 +109,7 @@ for batch in range(n_batches):
 
             inf = info[0]
 
-            # SAC_HER: Dict observation. LiDAR is first part of 'observation' key.
+            # SAC-Sparse (HER) + Hist: Dict observation. LiDAR is first part of 'observation' key.
             lidar_colum = obs['observation'][0, :n_lidar*3]
             lidar_data = lidar_colum.reshape(-1, 3)
             d_norm = lidar_data[:, 2]
@@ -190,7 +191,8 @@ clr_mean, clr_ci = batch_ci95(batch_clearance)
 stats_output = []
 stats_output.append(f"\n{'='*60}")
 stats_output.append(f"INFERENCE RESULTS: {run_name} on {env_name}")
-stats_output.append(f"Training parameters: Max goal sampling distance: {max_goal_sampling_distance}")
+stats_output.append(f"Training parameters:\nMax goal sampling distance: {max_goal_sampling_distance}")
+stats_output.append(f"k_history_window: {k_history_window}")
 stats_output.append(f"Method of Batch Means: {n_batches} batches × {eps_per_batch} episodes = {n_episodes} total")
 stats_output.append(f"95% CI computed over {n_batches} batch means (t-distribution, df={n_batches-1})")
 stats_output.append(f"{'='*60}")
@@ -209,7 +211,7 @@ stats_str = "\n".join(stats_output)
 print(stats_str)
 
 # Save Results
-results_dir = os.path.join(root, "SAC_HER", "inference_results")
+results_dir = os.path.join(root, "SAC_Sparse_HER_Hist", "inference_results")
 os.makedirs(results_dir, exist_ok=True)
 results_file = os.path.join(results_dir, f"{run_name}_{env_name.replace('/', '_')}_metrics_analysis.txt")
 with open(results_file, "w") as f:

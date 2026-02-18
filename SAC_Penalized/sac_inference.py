@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------
-#  Run inference with a SAC_HER_HIST policy trained in train_bunker.py
+#  Run inference with a SAC-Penalized policy trained in train_bunker.py
 #  Method of Batch Means: 20 batches × 10 episodes = 200 total
 # -------------------------------------------------------------
 import os
@@ -21,20 +21,22 @@ root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 run_name = "run_1"
 max_goal_sampling_distance = 8.0
 env_name = "test/world_17_easy"
-k_history_window = 10
 
 # Paths
 xml  = os.path.join(root, "assets", "worlds", f"{env_name}.xml")
-ckpt = os.path.join(root, "SAC_HER_HIST", "log", run_name, "best_model", "best_model.zip")
+ckpt = os.path.join(root, "SAC_Penalized", "log", run_name, "best_model", "best_model.zip")
 
 # Environment Setup
-env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode="human", max_goal_sampling_distance=max_goal_sampling_distance, k_history_window=k_history_window), 
+env = DummyVecEnv([lambda: TimeLimit(BunkerEnv(xml_path=xml, render_mode="human", max_goal_sampling_distance=max_goal_sampling_distance), 
                                                 max_episode_steps=600)])
 
 # Get env constants for observation decoding
 raw_env = env.envs[0].unwrapped
 n_lidar = raw_env.n_lidar
 lidar_max_range = raw_env.lidar_max_range
+max_dist_diag = raw_env.max_distance_diagonal
+v_max = raw_env.v_max
+w_max = raw_env.w_max
 dt = raw_env.model.opt.timestep * raw_env.frame_skip
 
 model: SAC = SAC.load(ckpt, env, device="auto")
@@ -96,12 +98,7 @@ for batch in range(n_batches):
         ep_clearance = []
         last_ang_vel = 0
         last_linear_vel = 0
-
-        # Calculate initial distance for SPL
-        # In SAC_HER_HIST, we get 'achieved_goal' and 'desired_goal' in obs
-        ag = obs['achieved_goal'][0]
-        dg = obs['desired_goal'][0]
-        initial_dist = np.linalg.norm(ag[:2] - dg[:2])
+        initial_dist = None
 
         for step in range(max_ep_len):
             action, _ = model.predict(obs, deterministic=deterministic)
@@ -109,9 +106,7 @@ for batch in range(n_batches):
 
             inf = info[0]
 
-            # SAC_HER_HIST: Dict observation. LiDAR is first part of 'observation' key.
-            lidar_colum = obs['observation'][0, :n_lidar*3]
-            lidar_data = lidar_colum.reshape(-1, 3)
+            lidar_data = obs[0, :n_lidar*3].reshape(-1, 3)
             d_norm = lidar_data[:, 2]
             d_real = (d_norm + 1.0) / 2.0 * lidar_max_range
             min_scan = np.min(d_real)
@@ -119,6 +114,10 @@ for batch in range(n_batches):
             curr_v, curr_ang_vel = raw_env.get_robot_velocities()
             curr_v = curr_v[0]
             curr_ang_vel = curr_ang_vel[2]
+
+            if initial_dist is None:
+                dist_norm = obs[0, n_lidar*3]
+                initial_dist = (dist_norm + 1.0) / 2.0 * max_dist_diag
 
             step_dist = abs(curr_v) * dt
             ep_path_length += step_dist
@@ -191,8 +190,7 @@ clr_mean, clr_ci = batch_ci95(batch_clearance)
 stats_output = []
 stats_output.append(f"\n{'='*60}")
 stats_output.append(f"INFERENCE RESULTS: {run_name} on {env_name}")
-stats_output.append(f"Training parameters:\nMax goal sampling distance: {max_goal_sampling_distance}")
-stats_output.append(f"k_history_window: {k_history_window}")
+stats_output.append(f"Training parameters: Max goal sampling distance: {max_goal_sampling_distance}")
 stats_output.append(f"Method of Batch Means: {n_batches} batches × {eps_per_batch} episodes = {n_episodes} total")
 stats_output.append(f"95% CI computed over {n_batches} batch means (t-distribution, df={n_batches-1})")
 stats_output.append(f"{'='*60}")
@@ -211,7 +209,7 @@ stats_str = "\n".join(stats_output)
 print(stats_str)
 
 # Save Results
-results_dir = os.path.join(root, "SAC_HER_HIST", "inference_results")
+results_dir = os.path.join(root, "SAC_Penalized", "inference_results")
 os.makedirs(results_dir, exist_ok=True)
 results_file = os.path.join(results_dir, f"{run_name}_{env_name.replace('/', '_')}_metrics_analysis.txt")
 with open(results_file, "w") as f:
