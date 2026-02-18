@@ -185,6 +185,70 @@ class BunkerEnv(MujocoEnv):
 
         return self._get_obs()
 
+    def set_manual_pose(self, initial_pose: NDArray[np.float32] | list[float], goal_pose: NDArray[np.float32] | list[float]) -> np.ndarray:
+        """
+        Manually set the initial robot pose and the goal pose.
+        Follows the same logic as reset_model, including collision checks, bounds checks,
+        distance checks, and controller reset.
+        """
+        self.velocity_controller.reset()
+
+        initial_pose = np.array(initial_pose, dtype=np.float32)
+        goal_pose = np.array(goal_pose, dtype=np.float32)
+
+        # Bounds check
+        if not (self.xy_min[0] <= initial_pose[0] <= self.xy_max[0] and 
+                self.xy_min[1] <= initial_pose[1] <= self.xy_max[1]):
+            raise ValueError(f"Initial pose {initial_pose[:2]} is out of world bounds {self.xy_min} to {self.xy_max}")
+        
+        if not (self.xy_min[0] <= goal_pose[0] <= self.xy_max[0] and 
+                self.xy_min[1] <= goal_pose[1] <= self.xy_max[1]):
+            raise ValueError(f"Goal pose {goal_pose[:2]} is out of world bounds {self.xy_min} to {self.xy_max}")
+
+        # Initial robot pose collision check
+        self.data.qpos[:] = 0.
+        self.data.qpos[:2] = initial_pose[:2]
+        self.data.qpos[2] = 0.25  # height above ground, defined in XML/reset_model
+        c, s = np.cos(initial_pose[2] / 2), np.sin(initial_pose[2] / 2)
+        self.data.qpos[3:7] = (c, 0., 0., s)
+
+        mujoco.mj_forward(self.model, self.data)
+        if self._is_collision():
+            raise ValueError(f"Initial pose {initial_pose} results in a collision.")
+
+        # Goal distance check
+        distance = np.linalg.norm(goal_pose[:2] - initial_pose[:2])
+        if not (self.min_goal_sampling_distance < distance <= self.max_goal_sampling_distance):
+            raise ValueError(f"Distance between start and goal ({distance:.2f}m) is outside the valid range "
+                             f"[{self.min_goal_sampling_distance}, {self.max_goal_sampling_distance}]")
+
+        # Goal pose collision check
+        self._goal = goal_pose.copy()
+        
+        # Temporarily set robot to goal position to check for collision
+        self.data.qpos[:2] = self._goal[:2]
+        c, s = np.cos(self._goal[2] / 2), np.sin(self._goal[2] / 2)
+        self.data.qpos[3:7] = (c, 0., 0., s)
+        mujoco.mj_forward(self.model, self.data)
+        has_collision = self._is_collision()
+
+        # Return robot to original (initial) position
+        self.data.qpos[:2] = initial_pose[:2]
+        c, s = np.cos(initial_pose[2] / 2), np.sin(initial_pose[2] / 2)
+        self.data.qpos[3:7] = (c, 0., 0., s)
+        mujoco.mj_forward(self.model, self.data)
+
+        if has_collision:
+            raise ValueError(f"Goal pose {goal_pose} results in a collision.")
+
+        # Finalize state (reset velocities, markers, etc.)
+        self.data.qvel[:] = 0.
+        self._prev_dist = self._goal_xy_distance()
+        self._is_final_goal = True
+        self._set_goal_marker_position(self._goal, is_final_goal=True)
+
+        return self._get_obs()
+
     def set_inference_goal(self, goal: NDArray[np.float32]) -> None:
         """
         Set the goal for inference mode. We just set an intermediate goal from the global planner. We suppose that the goal is collision-free.

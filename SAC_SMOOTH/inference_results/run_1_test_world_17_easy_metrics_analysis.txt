@@ -2,14 +2,16 @@
 ============================================================
 INFERENCE RESULTS: run_1 on test/world_17_easy
 Training parameters: Max goal sampling distance: 8.0
+Method of Batch Means: 20 batches × 10 episodes = 200 total
+95% CI computed over 20 batch means (t-distribution, df=19)
 ============================================================
-Success Rate:      99.0% (198/200)
-Collision Rate:    0.5% (1/200)
-Timeout Rate:      0.5% (1/200)
-Mean Episode Len:  111.3 steps
+Success Rate:      100.0% ± 0.0% (200/200)
+Collision Rate:    0.0% ± 0.0% (0/200)
+Timeout Rate:      0.0% ± 0.0% (0/200)
+Mean Episode Len:  114.8 ± 6.4 steps
 ------------------------------
-SPL:               0.9528
-Mean Ang. Smooth:  0.505928
-Mean Lin. Smooth:  0.349234
-Mean Clearance:    2.4817 m
+SPL:               0.9663 ± 0.0110
+Mean Ang. Smooth:  0.481403 ± 0.047648
+Mean Lin. Smooth:  0.335825 ± 0.032073
+Mean Clearance:    2.6771 ± 0.2706 m
 ============================================================
