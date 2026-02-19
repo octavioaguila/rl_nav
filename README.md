@@ -49,34 +49,78 @@ python -c "import mujoco; import torch; print('CUDA available:', torch.cuda.is_a
 
 ## Repository Structure
 
-All variant folders share the same internal structure but implement different approaches regarding reward formation, observation space, and training algorithms.
+All variant folders share the same internal structure but implement different approaches regarding reward formation, observation space, and training algorithms. The variants are ordered to reflect the paper’s progression from dense reward shaping, to explicit smoothness regularization, to sparse goal-conditioned learning, followed by their temporal history counterparts.
 
 ### Architectural Variants
 
 *   **`SAC_Dense/`** (SAC-Dense):
-    *   **Reward**: Dense (progress-based).
-    *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$).
-    *   **Description**: Uses Soft Actor-Critic with explicit relative goal information.
-
-*   **`SAC_Dense_Hist/`** (SAC-Dense + Hist):
-    *   **Reward**: Dense.
-    *   **Observation**: History-augmented ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{H}_t]$).
-    *   **Description**: Incorporates a temporal buffer of past velocity commands ($\mathcal{H}_t$) to capture short-term motion patterns.
-
-*   **`SAC_Sparse_HER/`** (SAC-Sparse (HER)):
-    *   **Reward**: Sparse (goal-conditioned).
-    *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$).
-    *   **Description**: Uses Hindsight Experience Replay (HER) to learn from sparse rewards. Relative goal features are recomputed internally to support goal relabeling.
-
-*   **`SAC_Sparse_HER_Hist/`** (SAC-Sparse (HER) + Hist):
-    *   **Reward**: Sparse.
-    *   **Observation**: History-augmented ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{H}_t]$).
-    *   **Description**: Combines HER with velocity history to handle both sparse rewards and partial observability/temporal context.
+    *   **Reward**: Dense progress-based shaping
+        $$
+        r_t =
+        \begin{cases}
+        r_{\text{succ}} & d_t^g < \epsilon_g \\
+        r_{\text{coll}} & \text{collision} \\
+        d_{t-1}^g - d_t^g & \text{otherwise}
+        \end{cases}
+        $$
+        with $r_{\text{succ}} = 10$, $r_{\text{coll}} = -10$
+    *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$)
+    *   **Description**: Baseline dense reward formulation providing continuous distance feedback toward the goal. Enables fast convergence but induces highly reactive control.
 
 *   **`SAC_Penalized/`** (SAC-Penalized):
-    *   **Reward**: Dense with angular-acceleration penalty.
-    *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$).
-    *   **Description**: Uses explicit motion cost penalties to encourage smoother control outputs.
+    *   **Reward**: Dense shaping with explicit smoothness penalty
+        $$
+        r_t =
+        \begin{cases}
+        r_{\text{succ}} & d_t^g < \epsilon_g \\
+        r_{\text{coll}} & \text{collision} \\
+        \left(d_{t-1}^g - d_t^g\right) - \left(\omega_t - \omega_{t-1}\right)^2 & \text{otherwise}
+        \end{cases}
+        $$
+        with $r_{\text{succ}} = 10$, $r_{\text{coll}} = -10$
+    *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$)
+    *   **Description**: Adds an explicit angular acceleration penalty to suppress control chatter. Represents the engineered smoothness upper bound.
+
+*   **`SAC_Sparse_HER/`** (SAC-Sparse (HER)):
+    *   **Reward**: Sparse goal-conditioned reward
+        $$
+        r_t =
+        \begin{cases}
+        r_{\text{succ}} & d_t^g < \epsilon_g \\
+        r_{\text{coll}} & \text{collision} \\
+        -1 & \text{otherwise}
+        \end{cases}
+        $$
+        with $r_{\text{succ}} = 0$, $r_{\text{coll}} = -100$
+    *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$)
+    *   **Description**: Uses Hindsight Experience Replay (HER) with binary success supervision. Tests the paper’s central hypothesis that smooth control emerges naturally from reward sparsity without explicit motion penalties.
+
+*   **`SAC_Dense_Hist/`** (SAC-Dense + Hist):
+    *   **Reward**: Dense progress-based shaping
+        $$
+        r_t =
+        \begin{cases}
+        r_{\text{succ}} & d_t^g < \epsilon_g \\
+        r_{\text{coll}} & \text{collision} \\
+        d_{t-1}^g - d_t^g & \text{otherwise}
+        \end{cases}
+        $$
+    *   **Observation**: History-augmented ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{H}_t]$)
+    *   **Description**: Incorporates velocity history to provide temporal motion context and evaluate the effect of short-term dynamics on dense reward learning.
+
+*   **`SAC_Sparse_HER_Hist/`** (SAC-Sparse (HER) + Hist):
+    *   **Reward**: Sparse goal-conditioned reward
+        $$
+        r_t =
+        \begin{cases}
+        r_{\text{succ}} & d_t^g < \epsilon_g \\
+        r_{\text{coll}} & \text{collision} \\
+        -1 & \text{otherwise}
+        \end{cases}
+        $$
+    *   **Observation**: History-augmented ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{H}_t]$)
+    *   **Description**: Evaluates whether temporal context improves or degrades the emergent smoothness of sparse goal-conditioned learning.
+
 
 ### Assets
 
