@@ -7,7 +7,7 @@ Each variant is launched as a separate subprocess to avoid MuJoCo context confli
 Saves all ghost trajectory images into a single output folder.
 
 Usage:
-    cd /path/to/rl_nav
+    cd /path/to/rl_nav/media
     python3 run_all_ghost_inference.py
 """
 import os
@@ -16,7 +16,8 @@ import json
 import subprocess
 
 # ========================== Shared Configuration ==========================
-ROOT = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(SCRIPT_DIR)
 
 run_name = "run_1"
 max_goal_sampling_distance = 8.0
@@ -34,6 +35,11 @@ ghost_height        = 1080
 ghost_dpi           = 300
 ghost_temporal_fade = False
 
+# Video recording settings
+video_width  = 960
+video_height = 540
+video_fps    = 30
+
 # Camera configuration (top-down bird's eye)
 ghost_cam_lookat    = [0.0, 0.0, 0.0]
 ghost_cam_distance  = 13.0
@@ -44,7 +50,7 @@ deterministic = True
 max_ep_len    = 600
 
 # Output folder for all variants
-output_dir = os.path.join(ROOT, "ghost_trajectory_results")
+output_dir = SCRIPT_DIR  # media/ directory
 os.makedirs(output_dir, exist_ok=True)
 
 # ========================== Variant Definitions ==========================
@@ -72,10 +78,12 @@ extra_kwargs = cfg["env_kwargs"]
 
 sys.path.insert(0, os.path.join(root, variant_name))
 sys.path.insert(0, root)
+sys.path.insert(0, cfg["output_dir"])  # media/ dir (renderers live here)
 
 from gym_bunker_env import BunkerEnv
 from feature_extractor import FeatureExtractor
-from lib.ghost_trajectory_renderer import render_ghost_trajectory
+from ghost_trajectory_renderer import render_ghost_trajectory
+from trajectory_video_renderer import render_trajectory_video
 
 xml_path = os.path.join(root, "assets", "worlds", f"{cfg['env_name']}.xml")
 ckpt     = os.path.join(root, variant_name, "log", cfg["run_name"], "best_model", "best_model.zip")
@@ -161,7 +169,7 @@ for step in range(cfg["max_ep_len"]):
 
 print(f"  Collected {len(episode_qpos)} qpos states, {len(metrics_log)} metric rows")
 
-# ----- Output directory: ghost_trajectory_results/<VARIANT>/ -----
+# ----- Output directory: media/<VARIANT>/ -----
 variant_dir = os.path.join(cfg["output_dir"], variant_name)
 os.makedirs(variant_dir, exist_ok=True)
 
@@ -177,6 +185,21 @@ render_ghost_trajectory(
     cam_lookat=cfg["ghost_cam_lookat"], cam_distance=cfg["ghost_cam_distance"],
     cam_azimuth=cfg["ghost_cam_azimuth"], cam_elevation=cfg["ghost_cam_elevation"],
     dpi=cfg["ghost_dpi"],
+)
+
+# Save inference video (real trajectory, not ghosted)
+video_path = os.path.join(variant_dir, f"{cfg['run_name']}_inference.mp4")
+render_trajectory_video(
+    model=raw_env.model,
+    episode_qpos=episode_qpos,
+    output_path=video_path,
+    width=cfg["video_width"],
+    height=cfg["video_height"],
+    fps=cfg["video_fps"],
+    cam_lookat=cfg["ghost_cam_lookat"],
+    cam_distance=cfg["ghost_cam_distance"],
+    cam_azimuth=cfg["ghost_cam_azimuth"],
+    cam_elevation=cfg["ghost_cam_elevation"],
 )
 
 # Save metrics CSV
@@ -226,6 +249,9 @@ def run_variant(variant: dict) -> bool:
         "ghost_cam_distance": ghost_cam_distance,
         "ghost_cam_azimuth": ghost_cam_azimuth,
         "ghost_cam_elevation": ghost_cam_elevation,
+        "video_width": video_width,
+        "video_height": video_height,
+        "video_fps": video_fps,
     }
 
     cfg_json = json.dumps(cfg)

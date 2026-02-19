@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 """
 Ghost Trajectory Renderer
-==========================
-Publication-quality ghosted trajectory rendering for MuJoCo robotics environments.
-Composites the robot at multiple time steps into a single static image using alpha blending.
-Suitable for IEEE RA-L / ICRA submissions.
 """
 
 import os

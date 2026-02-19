@@ -14,7 +14,7 @@ from gymnasium.wrappers import TimeLimit
 from feature_extractor import FeatureExtractor
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from lib.ghost_trajectory_renderer import render_ghost_trajectory
+from media.ghost_trajectory_renderer import render_ghost_trajectory
 
 # ========================== Configuration ==========================
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

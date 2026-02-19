@@ -9,7 +9,7 @@ Reads metrics CSV files from all variants and produces a 2×2 subplot figure:
   (1,1) Heading Error to Goal      vs Time
 
 Usage:
-    cd /path/to/rl_nav
+    cd /path/to/rl_nav/media
     python3 plot_ghost_metrics.py
 """
 import os
@@ -20,8 +20,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 # ========================== Configuration ==========================
-ROOT = os.path.dirname(os.path.abspath(__file__))
-RESULTS_DIR = os.path.join(ROOT, "ghost_trajectory_results")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(SCRIPT_DIR)
+RESULTS_DIR = SCRIPT_DIR  # media/ directory (metrics CSVs live here)
 RUN_NAME = "run_1"
 
 VARIANTS = ["SAC_Dense", "SAC_Sparse_HER", "SAC_Penalized", "SAC_Dense_Hist", "SAC_Sparse_HER_Hist"]

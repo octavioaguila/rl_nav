@@ -37,11 +37,11 @@
 
     <include file="../../bunker/bunker_body.xml"/>
 
-    <body name="mid_goal_marker" pos="-2 -4 0.1" mocap="true">
+    <body name="mid_goal_marker" pos="-0.5 3.0 0.0" mocap="true">
       <site name="mid_goal_sphere" type="sphere" size="0.1" rgba="1.0 1.0 0.0 1"/>
     </body>
 
-    <body name="final_goal_marker" pos="-2 -4 0.1" mocap="true">
+    <body name="final_goal_marker" pos="-2.5 -3.0 0.0" mocap="true">
       <site name="final_goal_sphere" type="sphere" size="0.1" rgba="1.0 0.0 0.0 1"/>
     </body>
 
