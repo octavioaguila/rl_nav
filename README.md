@@ -54,70 +54,27 @@ All variant folders share the same internal structure but implement different ap
 ### Architectural Variants
 
 *   **`SAC_Dense/`** (SAC-Dense):
-    *   **Reward**: Dense progress-based shaping
-        $$
-        r_t =
-        \begin{cases}
-        r_{\text{succ}} & d_t^g < \epsilon_g \\
-        r_{\text{coll}} & \text{collision} \\
-        d_{t-1}^g - d_t^g & \text{otherwise}
-        \end{cases}
-        $$
-        with $r_{\text{succ}} = 10$, $r_{\text{coll}} = -10$
+    *   **Reward**: Dense progress-based shaping — $r_t = d_{t-1}^g - d_t^g$ with $r_{\text{succ}} = 10$, $r_{\text{coll}} = -10$
     *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$)
     *   **Description**: Baseline dense reward formulation providing continuous distance feedback toward the goal. Enables fast convergence but induces highly reactive control.
 
 *   **`SAC_Penalized/`** (SAC-Penalized):
-    *   **Reward**: Dense shaping with explicit smoothness penalty
-        $$
-        r_t =
-        \begin{cases}
-        r_{\text{succ}} & d_t^g < \epsilon_g \\
-        r_{\text{coll}} & \text{collision} \\
-        \left(d_{t-1}^g - d_t^g\right) - \left(\omega_t - \omega_{t-1}\right)^2 & \text{otherwise}
-        \end{cases}
-        $$
-        with $r_{\text{succ}} = 10$, $r_{\text{coll}} = -10$
+    *   **Reward**: Dense shaping with smoothness penalty — $r_t = (d_{t-1}^g - d_t^g) - (\omega_t - \omega_{t-1})^2$ with $r_{\text{succ}} = 10$, $r_{\text{coll}} = -10$
     *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$)
     *   **Description**: Adds an explicit angular acceleration penalty to suppress control chatter. Represents the engineered smoothness upper bound.
 
 *   **`SAC_Sparse_HER/`** (SAC-Sparse (HER)):
-    *   **Reward**: Sparse goal-conditioned reward
-        $$
-        r_t =
-        \begin{cases}
-        r_{\text{succ}} & d_t^g < \epsilon_g \\
-        r_{\text{coll}} & \text{collision} \\
-        -1 & \text{otherwise}
-        \end{cases}
-        $$
-        with $r_{\text{succ}} = 0$, $r_{\text{coll}} = -100$
+    *   **Reward**: Sparse goal-conditioned — $r_t = -1$ per step, with $r_{\text{succ}} = 0$, $r_{\text{coll}} = -100$
     *   **Observation**: Memoryless ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{V}_t]$)
-    *   **Description**: Uses Hindsight Experience Replay (HER) with binary success supervision. Tests the paper’s central hypothesis that smooth control emerges naturally from reward sparsity without explicit motion penalties.
+    *   **Description**: Uses Hindsight Experience Replay (HER) with binary success supervision. Tests the paper's central hypothesis that smooth control emerges naturally from reward sparsity without explicit motion penalties.
 
 *   **`SAC_Dense_Hist/`** (SAC-Dense + Hist):
-    *   **Reward**: Dense progress-based shaping
-        $$
-        r_t =
-        \begin{cases}
-        r_{\text{succ}} & d_t^g < \epsilon_g \\
-        r_{\text{coll}} & \text{collision} \\
-        d_{t-1}^g - d_t^g & \text{otherwise}
-        \end{cases}
-        $$
+    *   **Reward**: Dense progress-based shaping — same as SAC-Dense
     *   **Observation**: History-augmented ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{H}_t]$)
     *   **Description**: Incorporates velocity history to provide temporal motion context and evaluate the effect of short-term dynamics on dense reward learning.
 
 *   **`SAC_Sparse_HER_Hist/`** (SAC-Sparse (HER) + Hist):
-    *   **Reward**: Sparse goal-conditioned reward
-        $$
-        r_t =
-        \begin{cases}
-        r_{\text{succ}} & d_t^g < \epsilon_g \\
-        r_{\text{coll}} & \text{collision} \\
-        -1 & \text{otherwise}
-        \end{cases}
-        $$
+    *   **Reward**: Sparse goal-conditioned — same as SAC-Sparse (HER)
     *   **Observation**: History-augmented ($s_t = [\mathcal{L}_t, \mathcal{G}_t, \mathcal{H}_t]$)
     *   **Description**: Evaluates whether temporal context improves or degrades the emergent smoothness of sparse goal-conditioned learning.
 
