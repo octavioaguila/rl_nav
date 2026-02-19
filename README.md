@@ -4,7 +4,7 @@
   <img src="media/rl_nav.gif" alt="RL Navigation Demo" width="600"/>
 </p>
 
-This repository provides an implementation of mapless navigation for Skid-Steer Mobile Robots (SSMRs) using Soft Actor-Critic (SAC) and Hindsight Experience Replay (HER), built on [MuJoCo](https://mujoco.org/) and [Stable-Baselines3](https://stable-baselines3.readthedocs.io/). This framework focuses on dynamical feasibility and control smoothness, proving that sparse rewards can act as an implicit regularizer to eliminate steering oscillations and robust navigation.
+This repository provides an implementation of mapless navigation for Skid-Steer Mobile Robots (SSMRs) using Soft Actor-Critic (SAC) and Hindsight Experience Replay (HER), built on [MuJoCo](https://mujoco.org/) and [Stable-Baselines3](https://stable-baselines3.readthedocs.io/). This framework focuses on dynamical feasibility and control smoothness, proving that sparse rewards can act as an implicit regularizer to eliminate steering oscillations and robust navigation (and tedious reward shaping 😴).
 
 ## Install
 
@@ -49,7 +49,7 @@ python -c "import mujoco; import torch; print('CUDA available:', torch.cuda.is_a
 
 ## Repository Structure
 
-All variant folders share the same internal structure but implement different approaches regarding reward formation, observation space, and training algorithms. The variants are ordered to reflect the paper’s progression from dense reward shaping, to explicit smoothness regularization, to sparse goal-conditioned learning, followed by their temporal history counterparts.
+All variant folders share the same internal structure but implement different approaches regarding reward formation, observation space, and training algorithms.
 
 ### Architectural Variants
 
