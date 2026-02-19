@@ -1,5 +1,9 @@
 # Mobile Robot Navigation with Reinforcement Learning
 
+<p align="center">
+  <img src="media/rl_nav.gif" alt="RL Navigation Demo" width="600"/>
+</p>
+
 This repository contains the implementation of various Reinforcement Learning (RL) architectural variants for mobile robot navigation. The project formulates the navigation task as a sequential Markov Decision Process (MDP) where a robot must navigate to a goal while avoiding obstacles.
 
 ## Repository Structure
@@ -106,3 +110,7 @@ python3 sac_inference.py
 ```
 
 This will load the default trained model, run evaluation episodes on the configured test worlds, and save the detailed metrics to `SAC_Sparse_HER/inference_results/`.
+
+## 📄 Citation
+If you find this work useful, please consider citing our paper:
+> **Paper coming soon** — BibTeX entry will be added upon publication.
