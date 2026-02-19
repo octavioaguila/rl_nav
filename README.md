@@ -1,10 +1,51 @@
-# Mobile Robot Navigation with Reinforcement Learning
+# MuJoCo RL Mobile Robot Navigation 
 
 <p align="center">
   <img src="media/rl_nav.gif" alt="RL Navigation Demo" width="600"/>
 </p>
 
-This repository contains the implementation of various Reinforcement Learning (RL) architectural variants for mobile robot navigation. The project formulates the navigation task as a sequential Markov Decision Process (MDP) where a robot must navigate to a goal while avoiding obstacles.
+This repository provides an implementation of mapless navigation for Skid-Steer Mobile Robots (SSMRs) using Soft Actor-Critic (SAC) and Hindsight Experience Replay (HER). This framework focuses on dynamical feasibility and control smoothness, proving that sparse rewards can act as an implicit regularizer to eliminate steering oscillations and robust navigation.
+
+## Install
+
+**Requires Python 3.10 and Linux.** We recommend using a Conda environment, but any virtual environment will work.
+
+### 0. Install Conda (if you haven't already)
+
+Follow the instructions in the [official Conda documentation](https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html) to install Miniconda.
+
+### 1. Create the Conda Environment
+
+```bash
+conda create -n "rl_nav" python=3.10.12 ipython
+```
+
+### 2. Activate the Environment
+
+```bash
+conda activate rl_nav
+conda env config vars set PYTHONNOUSERSITE=1  # Prevents user-site packages from leaking into the environment
+```
+
+### 3. Install PyTorch
+
+The command below assumes an **NVIDIA GPU with CUDA 12.4**. Check your version with `nvidia-smi` and visit [pytorch.org](https://pytorch.org/get-started/locally/) if you need a different CUDA version or CPU-only install.
+
+```bash
+pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+```
+
+### 4. Install Additional Requirements
+
+```bash
+pip install -r requirements.txt
+```
+
+### 5. Verify Installation
+
+```bash
+python -c "import mujoco; import torch; print('CUDA available:', torch.cuda.is_available())"
+```
 
 ## Repository Structure
 
@@ -56,45 +97,6 @@ The project explores the impact of reward density, goal conditioning, and tempor
 *   **Robot**: AgileX Bunker skid-steer platform.
 *   **Task**: Navigate to a goal within a predefined tolerance while avoiding collisions.
 *   **Evaluation**: Models are evaluated on unseen test worlds using metrics such as Success weighted by Path Length (SPL), Control Smoothness, and Mean Clearance Distance.
-
-## Environment Setup
-
-To run the code, you need to set up a Conda environment with the specific dependencies.
-
-### 0. Install Conda (if you haven't already)
-
-Follow the instructions in the [official Conda documentation](https://docs.conda.io/projects/conda/en/stable/user-guide/install/linux.html) to install Miniconda.
-
-### 1. Create the Conda Environment
-
-Run the following command to create a new environment named `ssmm_gnc` with Python 3.10.12 and IPython:
-
-```bash
-conda create -n "ssmm_gnc" python=3.10.12 ipython
-```
-
-### 2. Activate the Environment and set PYTHONNOUSERSITE
-
-```bash
-conda activate ssmm_gnc
-conda env config vars set PYTHONNOUSERSITE=1
-```
-
-### 3. Install PyTorch
-
-Install PyTorch with CUDA 12.4 support:
-
-```bash
-pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
-```
-
-### 4. Install Additional Requirements
-
-Install the remaining dependencies listed in `requeriments.txt`:
-
-```bash
-pip install -r requeriments.txt
-```
 
 ## Inference & Results
 
