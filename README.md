@@ -115,5 +115,4 @@ python3 sac_inference.py
 This will load the default trained model, run evaluation episodes on the configured test worlds, and save the detailed metrics to `SAC_Sparse_HER/inference_results/`.
 
 ## Citation
-If you find this work useful, please consider citing our paper:
-> **Paper coming soon** — BibTeX entry will be added upon publication.
+If you find this work useful, please consider citing our paper. Citation metadata is available in [`CITATION.cff`](CITATION.cff) — use the **"Cite this repository"** button in the GitHub sidebar to export APA or BibTeX.

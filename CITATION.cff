@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "MuJoCo RL Mobile Robot Navigation"
+authors:
+  - family-names: "Águila"
+    given-names: "Octavio"
+  - family-names: "Torres-Torriti"
+    given-names: "Miguel"
+  - family-names: "Toro"
+    given-names: "Rodrigo"
+  - family-names: "Auat Cheein"
+    given-names: "Fernando"
+repository-code: "https://github.com/octavioaguila/rl_nav"
+preferred-citation:
+  type: conference-paper
+  title: "Reward Sparsity as an Implicit Regularizer for Effective Skid-Steer Robot Navigation in Cluttered Environments"
+  authors:
+    - family-names: "Águila"
+      given-names: "Octavio"
+    - family-names: "Torres-Torriti"
+      given-names: "Miguel"
+    - family-names: "Toro"
+      given-names: "Rodrigo"
+    - family-names: "Auat Cheein"
+      given-names: "Fernando"
+  collection-title: "Advances of Control and Automation"
+  collection-type: "proceedings"
+  editors:
+    - family-names: "Michałek"
+      given-names: "Maciej Marcin"
+    - family-names: "Pazderski"
+      given-names: "Dariusz"
+    - family-names: "Bartoszewicz"
+      given-names: "Andrzej"
+    - family-names: "Kacprzyk"
+      given-names: "Janusz"
+  publisher:
+    name: "Springer Nature Switzerland"
+  year: 2027
+  start: 114
+  end: 126
+  isbn: "978-3-032-32216-6"
+  doi: "10.1007/978-3-032-32216-6_10"
