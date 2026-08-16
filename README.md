@@ -4,6 +4,10 @@
   <img src="media/rl_nav.gif" alt="RL Navigation Demo" width="600"/>
 </p>
 
+<p align="center">
+  <a href="https://doi.org/10.1007/978-3-032-32216-6_10"><img src="https://img.shields.io/badge/Paper-can%20be%20found%20here-blue?style=for-the-badge" alt="Paper"/></a>
+</p>
+
 This repository provides an implementation of mapless local-planner navigation for Skid-Steer Mobile Robots (SSMRs) using Soft Actor-Critic (SAC) and Hindsight Experience Replay (HER), built on [MuJoCo](https://mujoco.org/) and [Stable-Baselines3](https://stable-baselines3.readthedocs.io/). This framework focuses on dynamical feasibility and control smoothness, proving that sparse rewards can act as an implicit regularizer to eliminate steering oscillations and robust navigation (and tedious reward shaping 😴).
 
 ## Install
