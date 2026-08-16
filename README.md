@@ -115,4 +115,21 @@ python3 sac_inference.py
 This will load the default trained model, run evaluation episodes on the configured test worlds, and save the detailed metrics to `SAC_Sparse_HER/inference_results/`.
 
 ## Citation
-If you find this work useful, please consider citing our paper. Citation metadata is available in [`CITATION.cff`](CITATION.cff) — use the **"Cite this repository"** button in the GitHub sidebar to export APA or BibTeX.
+If you find this work useful, please consider citing our paper:
+
+```bibtex
+@InProceedings{Aguila2027RewardSparsity,
+  author    = {{\'A}guila, Octavio and Torres-Torriti, Miguel and Toro, Rodrigo and Auat Cheein, Fernando},
+  editor    = {Micha{\l}ek, Maciej Marcin and Pazderski, Dariusz and Bartoszewicz, Andrzej and Kacprzyk, Janusz},
+  title     = {Reward Sparsity as an Implicit Regularizer for Effective Skid-Steer Robot Navigation in Cluttered Environments},
+  booktitle = {Advances of Control and Automation},
+  year      = {2027},
+  publisher = {Springer Nature Switzerland},
+  address   = {Cham},
+  pages     = {114--126},
+  isbn      = {978-3-032-32216-6},
+  doi       = {10.1007/978-3-032-32216-6_10}
+}
+```
+
+Citation metadata is also available in [`CITATION.cff`](CITATION.cff). Use the **"Cite this repository"** button in the GitHub sidebar to export APA or BibTeX.
